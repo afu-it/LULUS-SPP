@@ -7,6 +7,8 @@ interface CreatePostBody {
   content?: string;
   authorName?: string;
   authorToken?: string;
+  sourceLink?: string;
+  isAdminPost?: boolean;
 }
 
 interface PostRow {
@@ -17,6 +19,7 @@ interface PostRow {
   isPinned: number | boolean;
   likes: number;
   reposts: number;
+  sourceLink: string | null;
   createdAt: string;
   updatedAt: string;
   commentsCount: number;
@@ -32,6 +35,7 @@ function mapPostRow(row: PostRow) {
     likes: Number(row.likes ?? 0),
     reposts: Number(row.reposts ?? 0),
     commentsCount: Number(row.commentsCount ?? 0),
+    sourceLink: row.sourceLink ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -57,6 +61,7 @@ export async function GET(request: Request) {
           p.isPinned,
           p.likes,
           p.reposts,
+          p.sourceLink,
           p.createdAt,
           p.updatedAt,
           COUNT(c.id) AS commentsCount
@@ -127,6 +132,7 @@ export async function POST(request: Request) {
       return jsonError(authorToken.error, 400, { requestId });
     }
 
+    const sourceLink = (body.sourceLink ?? '').trim() || null;
     const id = createId();
     const createdAt = createTimestamp();
     const normalizedAuthorName = authorName.value || 'Tetamu';
@@ -134,10 +140,10 @@ export async function POST(request: Request) {
     const db = getDb();
     await db
       .prepare(
-        `INSERT INTO "Post" (id, content, authorName, authorToken, isPinned, likes, reposts, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)`
+        `INSERT INTO "Post" (id, content, authorName, authorToken, isPinned, likes, reposts, sourceLink, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?, ?)`
       )
-      .bind(id, content.value, normalizedAuthorName, authorToken.value, createdAt, createdAt)
+      .bind(id, content.value, normalizedAuthorName, authorToken.value, sourceLink, createdAt, createdAt)
       .run();
 
     return NextResponse.json(
@@ -151,6 +157,7 @@ export async function POST(request: Request) {
           likes: 0,
           reposts: 0,
           commentsCount: 0,
+          sourceLink,
           createdAt,
           updatedAt: createdAt,
           requestId,

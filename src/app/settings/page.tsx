@@ -1,183 +1,144 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
-  Badge,
+  Anchor,
+  Box,
   Button,
   Container,
   Group,
+  Menu,
   Paper,
-  PasswordInput,
   SegmentedControl,
   Stack,
-  Switch,
   Text,
   TextInput,
   Title,
+  UnstyledButton,
 } from '@mantine/core';
-import { IconAlertCircle, IconCheck } from '@tabler/icons-react';
-import { useAuth } from '@/hooks/useAuth';
-import { useDarkMode } from '@/hooks/useDarkMode';
+import {
+  IconSun,
+  IconMoon,
+  IconDeviceDesktop,
+  IconChevronDown,
+} from '@tabler/icons-react';
+import { useRouter } from 'next/navigation';
 import { useGuestName } from '@/hooks/useGuestName';
+import { useDarkMode } from '@/hooks/useDarkMode';
 import { useI18n } from '@/hooks/useI18n';
 import type { Locale } from '@/providers/I18nProvider';
+import type { ThemeScheme } from '@/hooks/useDarkMode';
 
-interface FeedbackMessage {
-  tone: 'error' | 'success';
-  text: string;
-}
-
-function mapAuthErrorToMessage(rawError: string | undefined, t: (key: string) => string) {
-  const normalized = (rawError ?? '').toLowerCase();
-
-  if (normalized.includes('invalid username') || normalized.includes('invalid username or password')) {
-    return t('settings.auth.invalid');
-  }
-
-  return t('settings.auth.error');
-}
+const THEME_OPTIONS: { value: ThemeScheme; labelKey: string; icon: React.ReactNode }[] = [
+  { value: 'light', labelKey: 'settings.darkMode.light', icon: <IconSun size={15} /> },
+  { value: 'dark', labelKey: 'settings.darkMode.dark', icon: <IconMoon size={15} /> },
+  { value: 'auto', labelKey: 'settings.darkMode.auto', icon: <IconDeviceDesktop size={15} /> },
+];
 
 export default function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
-  const { isLoading, isAdmin, adminUsername, login, logout } = useAuth();
-  const { guestName, setGuestName, authorToken, isReady } = useGuestName();
-  const { isDark, toggle } = useDarkMode();
+  const { guestName, setGuestName, isReady } = useGuestName();
+  const { colorScheme, setTheme } = useDarkMode();
+  const router = useRouter();
 
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('');
   const [guestNameDraft, setGuestNameDraft] = useState('');
-  const [feedback, setFeedback] = useState<FeedbackMessage | null>(null);
+  const [saved, setSaved] = useState(false);
+
+  // 5-tap Easter egg on About section
+  const tapCountRef = useRef(0);
+  const tapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [tapsLeft, setTapsLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isReady) {
-      setGuestNameDraft(guestName);
-    }
+    if (isReady) setGuestNameDraft(guestName);
   }, [guestName, isReady]);
-
-  async function handleLogin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    const result = await login(username.trim(), password);
-
-    if (!result.ok) {
-      setFeedback({
-        tone: 'error',
-        text: mapAuthErrorToMessage(result.error, t),
-      });
-      return;
-    }
-
-    setPassword('');
-    setFeedback({
-      tone: 'success',
-      text: t('settings.auth.loginSuccess'),
-    });
-  }
-
-  async function handleLogout() {
-    await logout();
-    setFeedback({
-      tone: 'success',
-      text: t('settings.auth.logoutSuccess'),
-    });
-  }
 
   function handleSaveGuestName() {
     setGuestName(guestNameDraft);
-    setFeedback({
-      tone: 'success',
-      text: t('settings.guest.saved'),
-    });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
   }
+
+  function handleAboutTap() {
+    tapCountRef.current += 1;
+    const remaining = 5 - tapCountRef.current;
+
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = setTimeout(() => {
+      tapCountRef.current = 0;
+      setTapsLeft(null);
+    }, 3000);
+
+    if (tapCountRef.current >= 5) {
+      tapCountRef.current = 0;
+      setTapsLeft(null);
+      if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+      router.push('/admin-login');
+    } else if (remaining <= 3) {
+      setTapsLeft(remaining);
+    }
+  }
+
+  const currentThemeOption = THEME_OPTIONS.find((o) => o.value === colorScheme) ?? THEME_OPTIONS[2];
 
   return (
     <Container py="xl">
       <Stack gap="md">
+        {/* Header row */}
         <Group justify="space-between" align="center" wrap="nowrap">
           <Title order={2}>{t('settings.title')}</Title>
+
           <Group gap="xs" wrap="nowrap">
-            <Text size="sm" c="dimmed">
-              {t('settings.darkMode.title')}: {isDark ? t('settings.darkMode.on') : t('settings.darkMode.off')}
-            </Text>
-            <Switch
-              size="md"
-              checked={isDark}
-              onChange={() => toggle()}
-              aria-label={t('settings.darkMode.label')}
+            <SegmentedControl
+              size="xs"
+              value={locale}
+              onChange={(value) => setLocale(value as Locale)}
+              data={[
+                { label: 'BM', value: 'ms' },
+                { label: 'EN', value: 'en' },
+              ]}
             />
+
+            {/* Theme dropdown */}
+            <Menu shadow="md" width={180} position="bottom-end">
+              <Menu.Target>
+                <UnstyledButton
+                  aria-label={t('settings.darkMode.label')}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '6px 10px',
+                    borderRadius: 8,
+                    border: '1px solid var(--mantine-color-default-border)',
+                    fontSize: 13,
+                    color: 'var(--mantine-color-text)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {currentThemeOption.icon}
+                  <IconChevronDown size={13} />
+                </UnstyledButton>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                {THEME_OPTIONS.map((opt) => (
+                  <Menu.Item
+                    key={opt.value}
+                    leftSection={opt.icon}
+                    onClick={() => setTheme(opt.value)}
+                    fw={colorScheme === opt.value ? 700 : 400}
+                    color={colorScheme === opt.value ? 'brand' : undefined}
+                  >
+                    {t(opt.labelKey)}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
           </Group>
         </Group>
 
-        {isLoading && (
-          <Text size="sm" c="dimmed">
-            {t('settings.status.checking')}
-          </Text>
-        )}
-
-        {feedback && (
-          <Alert
-            color={feedback.tone === 'error' ? 'red' : 'green'}
-            icon={
-              feedback.tone === 'error' ? (
-                <IconAlertCircle size={16} />
-              ) : (
-                <IconCheck size={16} />
-              )
-            }
-            title={
-              feedback.tone === 'error'
-                ? t('settings.error.title')
-                : t('settings.success.title')
-            }
-          >
-            {feedback.text}
-          </Alert>
-        )}
-
-        <Paper withBorder p="md" radius="md">
-          <Stack gap="sm">
-            <Group justify="space-between">
-              <Title order={4}>{t('settings.auth.title')}</Title>
-              <Badge color={isAdmin ? 'green' : 'gray'}>
-                {t('settings.auth.mode')}:{' '}
-                {isAdmin ? t('settings.auth.modeAdmin') : t('settings.auth.modeGuest')}
-              </Badge>
-            </Group>
-
-            {isAdmin ? (
-              <Stack gap="sm">
-                <Text size="sm" c="dimmed">
-                  {adminUsername || 'admin'}
-                </Text>
-                <Button onClick={handleLogout} loading={isLoading} variant="outline" color="red">
-                  {t('settings.auth.logout')}
-                </Button>
-              </Stack>
-            ) : (
-              <form onSubmit={handleLogin}>
-                <Stack gap="sm">
-                  <TextInput
-                    label={t('settings.auth.username')}
-                    value={username}
-                    onChange={(event) => setUsername(event.currentTarget.value)}
-                    required
-                  />
-                  <PasswordInput
-                    label={t('settings.auth.password')}
-                    value={password}
-                    onChange={(event) => setPassword(event.currentTarget.value)}
-                    required
-                  />
-                  <Button type="submit" loading={isLoading}>
-                    {isLoading ? t('settings.auth.loggingIn') : t('settings.auth.login')}
-                  </Button>
-                </Stack>
-              </form>
-            )}
-          </Stack>
-        </Paper>
-
+        {/* Guest identity */}
         <Paper withBorder p="md" radius="md">
           <Stack gap="sm">
             <Title order={4}>{t('settings.guest.title')}</Title>
@@ -186,48 +147,55 @@ export default function SettingsPage() {
               label={t('settings.guest.nameLabel')}
               placeholder={t('settings.guest.namePlaceholder')}
               value={guestNameDraft}
-              onChange={(event) => setGuestNameDraft(event.currentTarget.value)}
+              onChange={(e) => setGuestNameDraft(e.currentTarget.value)}
             />
 
-            <Button onClick={handleSaveGuestName}>{t('settings.guest.save')}</Button>
+            <Button onClick={handleSaveGuestName} color={saved ? 'green' : undefined}>
+              {saved ? t('settings.success.title') + '!' : t('settings.guest.save')}
+            </Button>
 
-            <TextInput
-              label={t('settings.guest.tokenLabel')}
-              value={authorToken}
-              readOnly
-              description={isReady ? undefined : t('settings.status.checking')}
-            />
+            {!isReady && <Text size="xs" c="dimmed">{t('settings.status.checking')}</Text>}
           </Stack>
         </Paper>
 
-        <Paper withBorder p="md" radius="md">
-          <Stack gap="sm">
-            <Title order={4}>{t('settings.language.title')}</Title>
-            <Text size="sm" c="dimmed">
-              {t('settings.language.label')}
-            </Text>
-
-            <SegmentedControl
-              fullWidth
-              value={locale}
-              onChange={(value) => setLocale(value as Locale)}
-              data={[
-                { label: t('settings.language.ms'), value: 'ms' },
-                { label: t('settings.language.en'), value: 'en' },
-              ]}
-            />
-          </Stack>
-        </Paper>
-
-        <Paper withBorder p="md" radius="md">
-          <Stack gap="sm">
+        {/* About — 5-tap secret */}
+        <Paper
+          withBorder
+          p="md"
+          radius="md"
+          style={{ cursor: 'pointer', userSelect: 'none' }}
+          onClick={handleAboutTap}
+        >
+          <Stack gap="xs">
             <Title order={4}>{t('settings.about.title')}</Title>
-            <Text size="sm" c="dimmed">
-              {t('settings.about.body')}
-            </Text>
+            <Text size="sm" c="dimmed">{t('settings.about.body')}</Text>
+            {tapsLeft !== null && (
+              <Text size="xs" c="dimmed" ta="center">
+                {t('settings.about.taps').replace('{n}', String(tapsLeft))}
+              </Text>
+            )}
           </Stack>
         </Paper>
+
       </Stack>
+
+      {/* Footer contact */}
+      <Box mt="xl" pt="md" style={{ borderTop: '1px solid var(--mantine-color-default-border)' }}>
+        <Text size="xs" c="dimmed" ta="center">{t('settings.contact.title')}</Text>
+        <Text size="xs" c="dimmed" ta="center" mt={4}>{t('settings.contact.body')}</Text>
+        <Box ta="center" mt={6}>
+          <Anchor
+            href="https://wa.me/+601126101206"
+            target="_blank"
+            rel="noopener noreferrer"
+            size="sm"
+            fw={500}
+            c="green"
+          >
+            {t('settings.contact.whatsapp')}
+          </Anchor>
+        </Box>
+      </Box>
     </Container>
   );
 }

@@ -10,6 +10,7 @@ interface RouteParams {
 interface UpdateTipBody {
   content?: string;
   authorToken?: string;
+  sourceLink?: string;
   labelIds?: unknown;
   newLabels?: unknown;
 }
@@ -23,6 +24,7 @@ export async function PUT(request: Request, context: RouteParams) {
     const { id } = await context.params;
     const body = (await request.json()) as UpdateTipBody;
     const content = body.content?.trim() ?? '';
+    const sourceLink = body.sourceLink?.trim() || null;
     const actorToken = body.authorToken?.trim() ?? '';
 
     if (!content) {
@@ -52,7 +54,10 @@ export async function PUT(request: Request, context: RouteParams) {
 
     const updatedAt = createTimestamp();
 
-    await db.prepare(`UPDATE "Tip" SET content = ?, updatedAt = ? WHERE id = ?`).bind(content, updatedAt, id).run();
+    await db
+      .prepare(`UPDATE "Tip" SET content = ?, sourceLink = ?, updatedAt = ? WHERE id = ?`)
+      .bind(content, sourceLink, updatedAt, id)
+      .run();
 
     const hasLabelPayload = body.labelIds !== undefined || body.newLabels !== undefined;
 

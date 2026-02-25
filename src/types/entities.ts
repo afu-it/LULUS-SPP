@@ -15,6 +15,7 @@ export interface PostItem {
   likes: number;
   reposts: number;
   commentsCount: number;
+  sourceLink: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -49,6 +50,7 @@ export interface TipItem {
   content: string;
   authorName: string;
   authorToken: string;
+  sourceLink: string | null;
   labels: TipLabelItem[];
   createdAt: string;
   updatedAt: string;
@@ -66,6 +68,7 @@ export interface SoalanItem {
   bidangName: string;
   authorName: string;
   authorToken: string;
+  sourceLink: string | null;
   createdAt: string;
   updatedAt: string;
 }

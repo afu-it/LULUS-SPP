@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Container, TextInput, Stack, Text, Box, ActionIcon, Loader, Badge, Group, Avatar } from '@mantine/core';
+import { Container, TextInput, Stack, Text, Box, ActionIcon, Skeleton, Badge, Group, Avatar } from '@mantine/core';
 import { IconSearch, IconArrowLeft } from '@tabler/icons-react';
 import { useDebouncedValue } from '@mantine/hooks';
 import Link from 'next/link';
@@ -87,9 +87,20 @@ export default function SearchPage() {
       {/* Content */}
       <Box p="md">
         {loading && (
-          <Group justify="center" mt="xl">
-            <Loader color="brand" type="dots" />
-          </Group>
+          <Stack gap="sm" mt="md">
+            {[...Array(3)].map((_, index) => (
+              <Box key={`search-skeleton-${index}`} bg="#181818" p="md" style={{ borderRadius: 8 }}>
+                <Group wrap="nowrap" align="flex-start" gap="sm">
+                  <Skeleton height={36} width={36} circle />
+                  <Stack gap={8} style={{ flex: 1 }}>
+                    <Skeleton height={12} width="58%" />
+                    <Skeleton height={10} width="90%" />
+                    <Skeleton height={10} width="72%" />
+                  </Stack>
+                </Group>
+              </Box>
+            ))}
+          </Stack>
         )}
 
         {error && (

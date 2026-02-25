@@ -26,11 +26,11 @@ export function GuestPrompt() {
   return (
     <Modal
       opened={isOpen}
-      onClose={() => {}} // Force user to fill it out
-      withCloseButton={false}
+      onClose={() => setIsOpen(false)}
+      withCloseButton={true}
       centered
-      closeOnClickOutside={false}
-      closeOnEscape={false}
+      closeOnClickOutside={true}
+      closeOnEscape={true}
       title={
         <Text fw={700} size="lg">
           Selamat Datang!
@@ -53,6 +53,9 @@ export function GuestPrompt() {
         />
         <Button onClick={handleSubmit} disabled={draftName.trim().length === 0} fullWidth>
           Simpan Nama
+        </Button>
+        <Button variant="subtle" color="gray" size="xs" fullWidth onClick={() => setIsOpen(false)}>
+          Langkau (boleh tukar kemudian di Tetapan)
         </Button>
       </Stack>
     </Modal>

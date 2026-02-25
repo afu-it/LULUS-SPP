@@ -11,11 +11,18 @@
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--mantine-color-gray-2);
   padding-bottom: env(safe-area-inset-bottom, 0px);
+  transition: transform 180ms ease, opacity 180ms ease;
 
   @mixin dark {
     background-color: rgba(23, 24, 28, 0.94);
     border-top-color: var(--mantine-color-dark-5);
   }
+}
+
+.hidden {
+  transform: translateY(calc(100% + env(safe-area-inset-bottom, 0px)));
+  opacity: 0;
+  pointer-events: none;
 }
 
 .navItem {
@@ -59,5 +66,9 @@
     @mixin dark {
       border-inline-color: var(--mantine-color-dark-5);
     }
+  }
+
+  .hidden {
+    transform: translate(-50%, calc(100% + env(safe-area-inset-bottom, 0px)));
   }
 }

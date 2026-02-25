@@ -7,6 +7,7 @@ interface SoalanRow {
   bidangId: string;
   authorName: string;
   authorToken: string;
+  sourceLink: string | null;
   createdAt: string;
   updatedAt: string;
   bidangName: string;
@@ -17,6 +18,7 @@ interface CreateSoalanBody {
   bidangId?: string;
   authorName?: string;
   authorToken?: string;
+  sourceLink?: string;
 }
 
 function mapRow(row: SoalanRow) {
@@ -27,6 +29,7 @@ function mapRow(row: SoalanRow) {
     bidangName: row.bidangName,
     authorName: row.authorName,
     authorToken: row.authorToken,
+    sourceLink: row.sourceLink ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -46,6 +49,7 @@ export async function GET(request: Request) {
           s.bidangId,
           s.authorName,
           s.authorToken,
+          s.sourceLink,
           s.createdAt,
           s.updatedAt,
           b.name AS bidangName
@@ -93,16 +97,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Selected bidang does not exist.' }, { status: 400 });
     }
 
+    const sourceLink = body.sourceLink?.trim() || null;
     const id = createId();
     const timestamp = createTimestamp();
     const normalizedAuthorName = authorName || 'Tetamu';
 
     await db
       .prepare(
-        `INSERT INTO "Soalan" (id, content, bidangId, authorName, authorToken, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?, ?)`
+        `INSERT INTO "Soalan" (id, content, bidangId, authorName, authorToken, sourceLink, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(id, content, bidangId, normalizedAuthorName, authorToken, timestamp, timestamp)
+      .bind(id, content, bidangId, normalizedAuthorName, authorToken, sourceLink, timestamp, timestamp)
       .run();
 
     return NextResponse.json(
@@ -114,6 +119,7 @@ export async function POST(request: Request) {
           bidangName: bidang.name,
           authorName: normalizedAuthorName,
           authorToken,
+          sourceLink,
           createdAt: timestamp,
           updatedAt: timestamp,
         },

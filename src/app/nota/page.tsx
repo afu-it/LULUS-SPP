@@ -5,19 +5,21 @@ import {
   ActionIcon,
   Anchor,
   Avatar,
+  Box,
   Button,
   Container,
   Group,
-  Loader,
   Modal,
   Paper,
+  Divider,
+  Skeleton,
   Stack,
   Text,
   TextInput,
   Textarea,
   Title,
 } from '@mantine/core';
-import { IconEdit, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconLink, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatDateTime, formatRelativeTime } from '@/lib/date';
@@ -28,13 +30,13 @@ import type { NoteItem } from '@/types/entities';
 interface NoteFormState {
   title: string;
   content: string;
-  link: string;
+  sourceLink: string;
 }
 
 const EMPTY_FORM: NoteFormState = {
   title: '',
   content: '',
-  link: '',
+  sourceLink: '',
 };
 
 export default function NotaPage() {
@@ -86,7 +88,7 @@ export default function NotaPage() {
     setForm({
       title: note.title,
       content: note.content,
-      link: note.link ?? '',
+      sourceLink: note.link ?? '',
     });
     setIsModalOpen(true);
   }
@@ -100,7 +102,7 @@ export default function NotaPage() {
     const payload = {
       title: form.title.trim(),
       content: form.content.trim(),
-      link: form.link.trim(),
+      link: form.sourceLink.trim(),
       authorToken,
       authorName: guestName || 'Tetamu',
     };
@@ -162,6 +164,31 @@ export default function NotaPage() {
     return isAdmin || (authorToken ? note.authorToken === authorToken : false);
   }
 
+  function resolveCreditHref(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    if (/^www\./i.test(trimmed)) return `https://${trimmed}`;
+    if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(trimmed) && !/\s/.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return '';
+  }
+
+  function resolveCreditLabel(value: string) {
+    const raw = value.trim();
+    const href = resolveCreditHref(raw);
+    if (!href) return raw || 'Sumber';
+
+    try {
+      const hostname = new URL(href).hostname.replace(/^www\./i, '');
+      const [domain] = hostname.split('.');
+      return domain || raw || 'Sumber';
+    } catch {
+      return raw || 'Sumber';
+    }
+  }
+
   return (
     <Container py="md">
       <Stack gap="md">
@@ -178,7 +205,6 @@ export default function NotaPage() {
         </Group>
 
         <TextInput
-          leftSection={<IconSearch size={16} />}
           value={search}
           placeholder="Cari nota berdasarkan tajuk atau kandungan"
           onChange={(event) => setSearch(event.currentTarget.value)}
@@ -188,16 +214,35 @@ export default function NotaPage() {
             }
           }}
           rightSection={
-            <Button size="compact-xs" variant="subtle" onClick={() => void loadNotes(search)}>
-              Cari
-            </Button>
+            <ActionIcon
+              size="sm"
+              variant="subtle"
+              color="gray"
+              onClick={() => void loadNotes(search)}
+              aria-label="Cari nota"
+            >
+              <IconSearch size={16} />
+            </ActionIcon>
           }
+          rightSectionWidth={34}
         />
 
         {isLoading ? (
-          <Group justify="center" py="xl">
-            <Loader />
-          </Group>
+          <Stack gap="sm">
+            {[...Array(3)].map((_, index) => (
+              <Paper key={`note-skeleton-${index}`} withBorder p="md" radius="md" bg="#181818">
+                <Group wrap="nowrap" align="flex-start" gap="sm">
+                  <Skeleton height={36} width={36} circle />
+                  <Stack gap={8} style={{ flex: 1 }}>
+                    <Skeleton height={12} width="56%" />
+                    <Skeleton height={11} width="84%" />
+                    <Skeleton height={10} width="92%" />
+                    <Skeleton height={10} width="66%" />
+                  </Stack>
+                </Group>
+              </Paper>
+            ))}
+          </Stack>
         ) : notes.length === 0 ? (
           <EmptyState
             title="Tiada nota ditemui"
@@ -252,9 +297,21 @@ export default function NotaPage() {
                     </Text>
 
                     {note.link && (
-                      <Anchor href={note.link} target="_blank" rel="noreferrer" size="sm">
-                        {note.link}
-                      </Anchor>
+                      <>
+                        <Divider mt={3} mb={1} />
+                        <Box ta="right">
+                          <Text size="xs" c="#F3F5F7">
+                            Kredit:{' '}
+                            {resolveCreditHref(note.link) ? (
+                              <Anchor href={resolveCreditHref(note.link)} target="_blank" rel="noreferrer noopener" c="blue.4">
+                                {resolveCreditLabel(note.link)}
+                              </Anchor>
+                            ) : (
+                              <Text span c="#F3F5F7">{note.link.trim()}</Text>
+                            )}
+                          </Text>
+                        </Box>
+                      </>
                     )}
                   </Stack>
                 </Group>
@@ -288,10 +345,11 @@ export default function NotaPage() {
           />
 
           <TextInput
-            label="Pautan (optional)"
-            placeholder="https://..."
-            value={form.link}
-            onChange={(event) => setForm((prev) => ({ ...prev, link: event.currentTarget.value }))}
+            leftSection={<IconLink size={14} />}
+            label="Kredit / Pautan Sumber (opsyenal)"
+            placeholder="Contoh: https://maukerja.my/... atau Dr Rahman"
+            value={form.sourceLink}
+            onChange={(event) => setForm((prev) => ({ ...prev, sourceLink: event.currentTarget.value }))}
           />
 
           <Group justify="flex-end">

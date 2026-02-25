@@ -26,7 +26,7 @@ body {
 
 /* ── Dark mode colour tokens ─────────────────────────────── */
 [data-mantine-color-scheme="dark"] {
-  --dm-bg: #0a0a0a;
+  --dm-bg: #181818;
   --dm-icon: #4e4e4e;
   --dm-text: #f3f5f7;
   --dm-text-muted: #777777;

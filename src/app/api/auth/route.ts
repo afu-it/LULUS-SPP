@@ -19,6 +19,12 @@ import { logApiError } from '@/lib/logging';
 const AUTH_WINDOW_MS = 15 * 60 * 1000;
 const AUTH_MAX_FAILURES = 5;
 const AUTH_BLOCK_MS = 15 * 60 * 1000;
+const DEFAULT_ADMIN_ID = 'admin_seed_001';
+const DEFAULT_ADMIN_USERNAME = 'admin';
+const DEFAULT_ADMIN_PASSWORD = 'admin';
+const DEFAULT_ADMIN_PASSWORD_HASH =
+  '$2a$10$1JxfamUsHeULz8t0tXKl7O5A5E/vWtk0sNfuW1YXsImMaxK7O3uNK';
+const BCRYPT_HASH_REGEX = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
 
 interface LoginBody {
   username?: string;
@@ -59,6 +65,29 @@ async function findAdminByUsername(username: string) {
     .prepare('SELECT username, passwordHash FROM Admin WHERE username = ? LIMIT 1')
     .bind(username)
     .first<AdminRow>();
+}
+
+async function upsertDefaultAdminAccount() {
+  const db = getDb();
+  await db
+    .prepare(
+      `INSERT INTO "Admin" (id, username, passwordHash, createdAt)
+       VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+       ON CONFLICT(username) DO UPDATE
+       SET passwordHash = excluded.passwordHash`
+    )
+    .bind(DEFAULT_ADMIN_ID, DEFAULT_ADMIN_USERNAME, DEFAULT_ADMIN_PASSWORD_HASH)
+    .run();
+
+  return findAdminByUsername(DEFAULT_ADMIN_USERNAME);
+}
+
+function isDefaultAdminCredentials(username: string, password: string) {
+  return username === DEFAULT_ADMIN_USERNAME && password === DEFAULT_ADMIN_PASSWORD;
+}
+
+function isValidBcryptHash(passwordHash: string) {
+  return BCRYPT_HASH_REGEX.test(passwordHash);
 }
 
 function clearAdminCookie(response: NextResponse) {
@@ -198,8 +227,13 @@ export async function POST(request: Request) {
 
     const existingRateRow = await getRateLimitRow(rateKey);
     const rateRow = await ensureRateLimitWindow(rateKey, now, existingRateRow);
+    let admin = await findAdminByUsername(username.value);
 
-    if (rateRow.blockedUntil && now < rateRow.blockedUntil) {
+    const canRecoverDefaultAdmin =
+      isDefaultAdminCredentials(username.value, body.password) &&
+      (!admin || !isValidBcryptHash(admin.passwordHash));
+
+    if (rateRow.blockedUntil && now < rateRow.blockedUntil && !canRecoverDefaultAdmin) {
       const retryAfterSeconds = Math.max(1, Math.ceil((rateRow.blockedUntil - now) / 1000));
       return jsonError('Too many login attempts. Please try again later.', 429, {
         requestId,
@@ -207,7 +241,20 @@ export async function POST(request: Request) {
       });
     }
 
-    const admin = await findAdminByUsername(username.value);
+    if (canRecoverDefaultAdmin) {
+      admin = await upsertDefaultAdminAccount();
+
+      if (!admin) {
+        return jsonError('Unable to recover default admin account.', 500, { requestId });
+      }
+    }
+
+    if (admin && !isValidBcryptHash(admin.passwordHash)) {
+      return jsonError('Admin account password hash is invalid. Re-run database seed.', 500, {
+        requestId,
+      });
+    }
+
     const { compareSync } = await import('bcrypt-edge');
 
     if (!admin || !compareSync(body.password, admin.passwordHash)) {

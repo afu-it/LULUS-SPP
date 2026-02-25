@@ -2,11 +2,11 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { 
-  Box, Container, Group, ActionIcon, Title, Text, Stack, Badge, Divider, Loader, Button, Modal, Textarea
+  Box, Container, Group, ActionIcon, Title, Text, Stack, Badge, Divider, Skeleton, Button, Modal, Textarea
 } from '@mantine/core';
-import { IconArrowLeft, IconBellOff } from '@tabler/icons-react';
+import { IconArrowLeft, IconBellOff, IconSpeakerphone, IconTrash } from '@tabler/icons-react';
 import Link from 'next/link';
-import { Announcement } from '@prisma/client';
+import { AnnouncementItem } from '@/types/entities';
 import { notifications } from '@mantine/notifications';
 import { formatDateTime } from '@/lib/date';
 import { AuthContext } from '@/providers/AuthProvider';
@@ -15,19 +15,19 @@ import { useContext } from 'react';
 export default function NotificationsPage() {
   const auth = useContext(AuthContext);
   const isAdmin = auth?.isAdmin ?? false;
-  const [announcement, setAnnouncement] = useState<Announcement | null>(null);
+  const [announcementList, setAnnouncementList] = useState<AnnouncementItem[]>([]);
   const [isLoadingAnnouncement, setIsLoadingAnnouncement] = useState(true);
   const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
   const [announcementDraft, setAnnouncementDraft] = useState('');
   const [isSubmittingAnnouncement, setIsSubmittingAnnouncement] = useState(false);
 
-  const loadAnnouncement = useCallback(async () => {
+  const loadAnnouncements = useCallback(async () => {
     try {
       setIsLoadingAnnouncement(true);
       const res = await fetch('/api/announcements');
       if (res.ok) {
-        const body = (await res.json()) as { announcement: Announcement | null };
-        setAnnouncement(body.announcement);
+        const body = (await res.json()) as { items: AnnouncementItem[] };
+        setAnnouncementList(body.items ?? []);
       }
     } catch {
       notifications.show({ color: 'red', message: 'Gagal muat pengumuman.' });
@@ -37,41 +37,41 @@ export default function NotificationsPage() {
   }, []);
 
   useEffect(() => {
-    loadAnnouncement();
-  }, [loadAnnouncement]);
+    void loadAnnouncements();
+  }, [loadAnnouncements]);
 
   async function handleSaveAnnouncement() {
     const content = announcementDraft.trim();
-
     if (!content) {
       notifications.show({ color: 'red', title: 'Ralat', message: 'Isi pengumuman diperlukan.' });
       return;
     }
-
     setIsSubmittingAnnouncement(true);
-
     try {
-      const isEditing = Boolean(announcement?.id);
-      const response = await fetch(
-        isEditing ? `/api/announcements/${announcement?.id}` : '/api/announcements',
-        {
-          method: isEditing ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, isActive: true }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Unable to save announcement');
-      }
-
-      await loadAnnouncement();
+      const response = await fetch('/api/announcements', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, isActive: true }),
+      });
+      if (!response.ok) throw new Error('Unable to save announcement');
+      await loadAnnouncements();
       setIsAnnouncementModalOpen(false);
-      notifications.show({ color: 'green', message: 'Pengumuman dikemas kini.' });
+      setAnnouncementDraft('');
+      notifications.show({ color: 'green', message: 'Pengumuman ditambah.' });
     } catch {
       notifications.show({ color: 'red', message: 'Tidak dapat simpan pengumuman.' });
     } finally {
       setIsSubmittingAnnouncement(false);
+    }
+  }
+
+  async function handleDeleteAnnouncement(id: string) {
+    try {
+      await fetch(`/api/announcements/${id}`, { method: 'DELETE' });
+      setAnnouncementList((prev) => prev.filter((a) => a.id !== id));
+      notifications.show({ color: 'green', message: 'Pengumuman dipadam.' });
+    } catch {
+      notifications.show({ color: 'red', message: 'Gagal memadam pengumuman.' });
     }
   }
 
@@ -94,11 +94,11 @@ export default function NotificationsPage() {
           </Title>
           <Box style={{ flex: 1 }} />
           {isAdmin && (
-            <Button size="xs" variant="light" onClick={() => {
-              setAnnouncementDraft(announcement?.content ?? '');
+            <Button size="xs" variant="light" leftSection={<IconSpeakerphone size={14} />} onClick={() => {
+              setAnnouncementDraft('');
               setIsAnnouncementModalOpen(true);
             }}>
-              Edit Pengumuman
+              + Pengumuman
             </Button>
           )}
         </Group>
@@ -106,24 +106,44 @@ export default function NotificationsPage() {
 
       <Stack gap={0}>
         {isLoadingAnnouncement ? (
-          <Group justify="center" p="md">
-            <Loader size="sm" />
-          </Group>
-        ) : announcement ? (
-          <Box p="md" bg="#181818">
-            <Stack gap={4}>
-              <Group justify="space-between">
-                <Badge color="brand" variant="filled">
-                  Pengumuman
-                </Badge>
-                <Text size="xs" c="dimmed">
-                  {formatDateTime(announcement.updatedAt as unknown as string)}
-                </Text>
-              </Group>
-              <Text size="sm">{announcement.content}</Text>
-            </Stack>
-            <Divider mt="md" />
-          </Box>
+          <Stack p="md" gap="sm">
+            {[...Array(2)].map((_, index) => (
+              <Box key={`announcement-skeleton-${index}`} p="sm" bg="#181818" style={{ borderRadius: 8 }}>
+                <Skeleton height={11} width="40%" mb={6} />
+                <Skeleton height={10} width="92%" />
+                <Skeleton height={10} width="68%" mt={6} />
+              </Box>
+            ))}
+          </Stack>
+        ) : announcementList.length > 0 ? (
+          announcementList.map((ann) => (
+            <Box key={ann.id} p="md" bg="#181818">
+              <Stack gap={4}>
+                <Group justify="space-between">
+                  <Badge color="brand" variant="filled">
+                    📣 Pengumuman
+                  </Badge>
+                  <Group gap={6}>
+                    <Text size="xs" c="dimmed">
+                      {formatDateTime(ann.updatedAt as unknown as string)}
+                    </Text>
+                    {isAdmin && (
+                      <ActionIcon
+                        size="xs"
+                        variant="subtle"
+                        color="red"
+                        onClick={() => void handleDeleteAnnouncement(ann.id)}
+                      >
+                        <IconTrash size={12} />
+                      </ActionIcon>
+                    )}
+                  </Group>
+                </Group>
+                <Text size="sm">{ann.content}</Text>
+              </Stack>
+              <Divider mt="md" />
+            </Box>
+          ))
         ) : null}
 
         <Box p="xl" mt="xl">
@@ -140,7 +160,7 @@ export default function NotificationsPage() {
       <Modal
         opened={isAnnouncementModalOpen}
         onClose={() => setIsAnnouncementModalOpen(false)}
-        title="Kemaskini Pengumuman"
+        title="Tambah Pengumuman Baharu"
         centered
       >
         <Stack>
@@ -163,7 +183,7 @@ export default function NotificationsPage() {
               onClick={() => void handleSaveAnnouncement()}
               loading={isSubmittingAnnouncement}
             >
-              Simpan
+              Hantar
             </Button>
           </Group>
         </Stack>

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const ADMIN_USERNAME = process.env.E2E_ADMIN_USERNAME ?? 'admin';
-const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'LulusSPP2026!';
+const ADMIN_PASSWORD = process.env.E2E_ADMIN_PASSWORD ?? 'admin';
 
 test('core API CRUD smoke works', async ({ request }) => {
   const stamp = Date.now();

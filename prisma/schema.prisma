@@ -23,6 +23,7 @@ model Post {
   isPinned    Boolean   @default(false)
   likes       Int       @default(0)
   reposts     Int       @default(0)
+  sourceLink  String?
   comments    Comment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -62,6 +63,7 @@ model Tip {
   content     String
   authorName  String
   authorToken String
+  sourceLink  String?
   labels      TipToLabel[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
@@ -88,6 +90,7 @@ model Soalan {
   bidang      Bidang   @relation(fields: [bidangId], references: [id])
   authorName  String
   authorToken String
+  sourceLink  String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }

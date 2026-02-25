@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActionIcon,
+  Anchor,
   Avatar,
   Badge,
   Box,
@@ -10,7 +11,6 @@ import {
   Container,
   Divider,
   Group,
-  Loader,
   Menu,
   Modal,
   Paper,
@@ -32,7 +32,8 @@ import {
   IconThumbUp, 
   IconTrash,
   IconUserCircle,
-  IconBell
+  IconBell,
+  IconX
 } from '@tabler/icons-react';
 import { useWindowScroll } from '@mantine/hooks';
 import Link from 'next/link';
@@ -47,6 +48,8 @@ import type { CommentItem, PostItem } from '@/types/entities';
 
 const POSTS_PAGE_SIZE = 10;
 const LIKED_POSTS_STORAGE_KEY = 'lulus-spp:liked-posts';
+const REPOSTED_POSTS_STORAGE_KEY = 'lulus-spp:reposted-posts';
+const DISMISSED_BANNER_KEY = 'lulus-spp:dismissed-banner';
 
 function sortPosts(items: PostItem[]) {
   return [...items].sort((a, b) => {
@@ -56,6 +59,41 @@ function sortPosts(items: PostItem[]) {
 
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+}
+
+type StatusOption = 'online' | 'busy' | 'offline';
+
+const STATUS_COLORS: Record<StatusOption, string> = {
+  online: '#22c55e',
+  busy: '#f59e0b',
+  offline: '#6b7280',
+};
+
+const STATUS_KEY = 'lulus-spp:status';
+
+function resolveCreditHref(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (/^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^www\./i.test(trimmed)) return `https://${trimmed}`;
+  if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(trimmed) && !/\s/.test(trimmed)) {
+    return `https://${trimmed}`;
+  }
+  return '';
+}
+
+function resolveCreditLabel(value: string) {
+  const raw = value.trim();
+  const href = resolveCreditHref(raw);
+  if (!href) return raw || 'Sumber';
+
+  try {
+    const hostname = new URL(href).hostname.replace(/^www\./i, '');
+    const [domain] = hostname.split('.');
+    return domain || raw || 'Sumber';
+  } catch {
+    return raw || 'Sumber';
+  }
 }
 
 export default function HomePage() {
@@ -76,19 +114,55 @@ export default function HomePage() {
   const [hasMorePosts, setHasMorePosts] = useState(false);
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [loadingCommentsByPost, setLoadingCommentsByPost] = useState<Record<string, boolean>>({});
+  const [status, setStatus] = useState<StatusOption>('online');
+
+  // Sticky banner
+  const [banner, setBanner] = useState<{ id: string; content: string } | null>(null);
+  const [isBannerVisible, setIsBannerVisible] = useState(false);
 
   const [scroll] = useWindowScroll();
-  const [lastScrollY, setLastScrollY] = useState(0);
-  const [showFAB, setShowFAB] = useState(false);
+  const lastScrollYRef = useRef(0);
+  const [showFAB, setShowFAB] = useState(true);
 
   useEffect(() => {
-    if (scroll.y > lastScrollY) {
+    const stored = window.localStorage.getItem(STATUS_KEY) as StatusOption | null;
+    if (stored && stored in STATUS_COLORS) setStatus(stored);
+  }, []);
+
+  // Fetch banner
+  useEffect(() => {
+    void (async () => {
+      try {
+        const res = await fetch('/api/banner');
+        if (res.ok) {
+          const data = (await res.json()) as { item: { id: string; content: string } | null };
+          if (data.item) {
+            const dismissed = window.localStorage.getItem(DISMISSED_BANNER_KEY);
+            if (dismissed !== data.item.id) {
+              setBanner(data.item);
+              setIsBannerVisible(true);
+            }
+          }
+        }
+      } catch {
+        // silent
+      }
+    })();
+  }, []);
+
+  function handleSetStatus(s: StatusOption) {
+    setStatus(s);
+    window.localStorage.setItem(STATUS_KEY, s);
+  }
+
+  useEffect(() => {
+    if (scroll.y > lastScrollYRef.current) {
       setShowFAB(true);
-    } else if (scroll.y < lastScrollY) {
+    } else if (scroll.y < lastScrollYRef.current) {
       setShowFAB(false);
     }
-    setLastScrollY(scroll.y);
-  }, [scroll.y, lastScrollY]);
+    lastScrollYRef.current = scroll.y;
+  }, [scroll.y]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LIKED_POSTS_STORAGE_KEY);
@@ -216,7 +290,7 @@ export default function HomePage() {
         return [...prev, post.id];
       });
       
-      notifications.show({ color: 'green', message: isReposted ? 'Repost dibatalkan.' : 'Post direpost.' });
+      // silent — no notification for repost
     } catch {
       notifications.show({ color: 'red', message: 'Tidak dapat mengemas kini repost.' });
     }
@@ -378,46 +452,151 @@ export default function HomePage() {
 
   return (
     <Container px={0} py={0}>
-      {/* ── Custom Sticky Header ── */}
+      {/* ── Compact Sticky Header ── */}
       <Box
         pos="sticky"
         top={0}
         bg="#181818"
         style={{ zIndex: 100, borderBottom: '1px solid var(--mantine-color-default-border)' }}
         px="md"
-        py="xs"
+        py={6}
       >
-        <Group align="center" wrap="nowrap" pos="relative" style={{ minHeight: 32 }}>
-          <Box style={{ flex: 1 }} />
-          <Text fw={800} size="lg" style={{ letterSpacing: '1px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+        <Group align="center" justify="space-between" wrap="nowrap" style={{ minHeight: 28 }}>
+          {/* Left: status indicator */}
+          {isAdmin ? (
+            <Menu shadow="md" width={150} position="bottom-start">
+              <Menu.Target>
+                <Box
+                  style={{ display: 'flex', alignItems: 'center', gap: 5, cursor: 'pointer' }}
+                >
+                  <Box
+                    style={{
+                      width: 8, height: 8, borderRadius: '50%',
+                      background: STATUS_COLORS[status],
+                      boxShadow: `0 0 6px ${STATUS_COLORS[status]}`,
+                    }}
+                  />
+                  <Text size="xs" c="dimmed">Online</Text>
+                </Box>
+              </Menu.Target>
+              <Menu.Dropdown>
+                {(['online', 'busy', 'offline'] as StatusOption[]).map((s) => (
+                  <Menu.Item
+                    key={s}
+                    fw={status === s ? 700 : 400}
+                    leftSection={
+                      <Box style={{ width: 8, height: 8, borderRadius: '50%', background: STATUS_COLORS[s] }} />
+                    }
+                    onClick={() => handleSetStatus(s)}
+                  >
+                    {s.charAt(0).toUpperCase() + s.slice(1)}
+                  </Menu.Item>
+                ))}
+              </Menu.Dropdown>
+            </Menu>
+          ) : (
+            <Box style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+              <Box
+                style={{
+                  width: 8, height: 8, borderRadius: '50%',
+                  background: STATUS_COLORS[status],
+                  boxShadow: `0 0 6px ${STATUS_COLORS[status]}`,
+                }}
+              />
+              <Text size="xs" c="dimmed">Online</Text>
+            </Box>
+          )}
+
+          {/* Center: title */}
+          <Text fw={800} size="md" style={{ letterSpacing: '1px' }}>
             LULUS SPP
           </Text>
-          <Group gap="xs" style={{ flex: 1, justifyItems: 'flex-end', justifyContent: 'flex-end' }}>
+
+          {/* Right: icons */}
+          <Group gap={4}>
             <ActionIcon
               component={Link}
               href="/notifications"
               variant="subtle"
               color="gray"
-              size="lg"
+              size="md"
               aria-label="Notifikasi"
             >
-              <IconBell size={22} />
+              <IconBell size={18} />
             </ActionIcon>
             <ActionIcon
               component={Link}
               href="/search"
               variant="subtle"
               color="gray"
-              size="lg"
+              size="md"
               aria-label="Search"
             >
-              <IconSearch size={22} />
+              <IconSearch size={18} />
             </ActionIcon>
           </Group>
         </Group>
       </Box>
 
       <Stack gap={0}>
+        {/* ── Admin Sticky Banner ── */}
+        {isBannerVisible && banner && (
+          <Box px="md" pt="sm">
+            <Paper
+              p="sm"
+              radius="md"
+              style={{
+                background:
+                  'linear-gradient(115deg, rgba(38,46,92,0.98) 0%, rgba(31,41,78,0.96) 45%, rgba(23,28,56,0.96) 100%)',
+                border: '1px solid rgba(113,131,255,0.35)',
+                boxShadow: '0 8px 20px rgba(8,10,22,0.35)',
+              }}
+            >
+              <Group justify="space-between" align="flex-start" wrap="nowrap" gap="xs">
+                <Group gap={8} align="center" wrap="nowrap">
+                  <Badge
+                    size="xs"
+                    variant="filled"
+                    color="indigo"
+                    style={{ letterSpacing: 0.3, textTransform: 'uppercase' }}
+                  >
+                    Pengumuman
+                  </Badge>
+                  <Text size="xs" c="indigo.1">
+                    Admin
+                  </Text>
+                </Group>
+                <ActionIcon
+                  variant="subtle"
+                  color="gray"
+                  size="sm"
+                  aria-label="Tutup banner"
+                  onClick={() => {
+                    setIsBannerVisible(false);
+                    window.localStorage.setItem(DISMISSED_BANNER_KEY, banner.id);
+                  }}
+                  style={{ color: '#c8d0ff', flexShrink: 0 }}
+                >
+                  <IconX size={14} />
+                </ActionIcon>
+              </Group>
+
+              <Text
+                size="sm"
+                mt={8}
+                style={{
+                  color: '#edf1ff',
+                  lineHeight: 1.5,
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere',
+                  wordBreak: 'break-word',
+                }}
+              >
+                {banner.content}
+              </Text>
+            </Paper>
+          </Box>
+        )}
         {isLoadingPosts ? (
           <Stack gap={0}>
             {[...Array(5)].map((_, i) => (
@@ -458,7 +637,12 @@ export default function HomePage() {
                       <Stack gap={0} style={{ flex: 1 }}>
                         <Group justify="space-between" align="flex-start" wrap="nowrap">
                           <Group gap={6} align="baseline">
-                            <Text fw={600} size="sm" lh={1.2}>
+                            <Text
+                              fw={600}
+                              size="sm"
+                              lh={1.2}
+                              style={post.authorToken === 'admin' || post.authorToken === 'admin-post' ? { color: '#262e5c' } : undefined}
+                            >
                               {post.authorName}
                             </Text>
                             <Text size="xs" c="dimmed" lh={1.2}>
@@ -521,6 +705,29 @@ export default function HomePage() {
                         {post.content}
                       </Text>
 
+                      {post.sourceLink && (() => {
+                        const raw = post.sourceLink.trim();
+                        const href = resolveCreditHref(raw);
+                        const label = resolveCreditLabel(post.sourceLink);
+                        return (
+                          <>
+                            <Divider mt={3} mb={1} />
+                            <Box ta="right">
+                              <Text size="xs" c="#F3F5F7">
+                                Kredit:{' '}
+                                {href ? (
+                                  <Anchor href={href} target="_blank" rel="noopener noreferrer" c="blue.4">
+                                    {label}
+                                  </Anchor>
+                                ) : (
+                                  <Text span c="#F3F5F7">{raw}</Text>
+                                )}
+                              </Text>
+                            </Box>
+                          </>
+                        );
+                      })()}
+
                       <Group gap="md">
                         <Button
                           size="xs"
@@ -549,7 +756,12 @@ export default function HomePage() {
                           variant="transparent"
                           color={repostedPostIds.includes(post.id) ? 'green' : 'gray'}
                           px={0}
-                          leftSection={<IconRepeat size={20} />}
+                          leftSection={
+                            <IconRepeat
+                              size={20}
+                              style={repostedPostIds.includes(post.id) ? { color: '#22c55e' } : undefined}
+                            />
+                          }
                           onClick={() => void handleToggleRepost(post)}
                         >
                           {post.reposts || 0}
@@ -559,9 +771,10 @@ export default function HomePage() {
                       {isExpanded && (
                         <Stack gap="xs" pt={6}>
                           {loadingCommentsByPost[post.id] ? (
-                            <Group justify="center" py={8}>
-                              <Loader size="sm" />
-                            </Group>
+                            <Stack gap={6} py={8}>
+                              <Skeleton height={10} width="88%" />
+                              <Skeleton height={10} width="74%" />
+                            </Stack>
                           ) : comments.length === 0 ? (
                             <Text size="xs" c="dimmed">
                               Belum ada komen.

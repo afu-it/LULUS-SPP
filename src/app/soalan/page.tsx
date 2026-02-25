@@ -3,14 +3,17 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActionIcon,
+  Anchor,
   Avatar,
   Badge,
+  Box,
   Button,
   Container,
   Group,
-  Loader,
   Modal,
   Paper,
+  Divider,
+  Skeleton,
   Select,
   Stack,
   Text,
@@ -18,7 +21,7 @@ import {
   Textarea,
   Title,
 } from '@mantine/core';
-import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react';
+import { IconEdit, IconLink, IconPlus, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
 import { formatDateTime, formatRelativeTime } from '@/lib/date';
@@ -29,11 +32,13 @@ import type { BidangItem, SoalanItem } from '@/types/entities';
 interface SoalanFormState {
   content: string;
   bidangId: string;
+  sourceLink: string;
 }
 
 const EMPTY_FORM: SoalanFormState = {
   content: '',
   bidangId: '',
+  sourceLink: '',
 };
 
 export default function SoalanPage() {
@@ -111,6 +116,7 @@ export default function SoalanPage() {
     setForm({
       content: '',
       bidangId: bidangList[0]?.id ?? '',
+      sourceLink: '',
     });
     setIsModalOpen(true);
   }
@@ -120,6 +126,7 @@ export default function SoalanPage() {
     setForm({
       content: item.content,
       bidangId: item.bidangId,
+      sourceLink: item.sourceLink ?? '',
     });
     setIsModalOpen(true);
   }
@@ -133,6 +140,7 @@ export default function SoalanPage() {
     const payload = {
       content: form.content.trim(),
       bidangId: form.bidangId,
+      sourceLink: form.sourceLink.trim() || undefined,
       authorToken,
       authorName: guestName || 'Tetamu',
     };
@@ -236,6 +244,31 @@ export default function SoalanPage() {
     [bidangList]
   );
 
+  function resolveCreditHref(value: string) {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    if (/^www\./i.test(trimmed)) return `https://${trimmed}`;
+    if (/^[\w.-]+\.[a-z]{2,}(\/|$)/i.test(trimmed) && !/\s/.test(trimmed)) {
+      return `https://${trimmed}`;
+    }
+    return '';
+  }
+
+  function resolveCreditLabel(value: string) {
+    const raw = value.trim();
+    const href = resolveCreditHref(raw);
+    if (!href) return raw || 'Sumber';
+
+    try {
+      const hostname = new URL(href).hostname.replace(/^www\./i, '');
+      const [domain] = hostname.split('.');
+      return domain || raw || 'Sumber';
+    } catch {
+      return raw || 'Sumber';
+    }
+  }
+
   return (
     <Container py="md">
       <Stack gap="md">
@@ -283,9 +316,21 @@ export default function SoalanPage() {
         )}
 
         {isLoading ? (
-          <Group justify="center" py="xl">
-            <Loader />
-          </Group>
+          <Stack gap="sm">
+            {[...Array(3)].map((_, index) => (
+              <Paper key={`soalan-skeleton-${index}`} withBorder p="md" radius="md" bg="#181818">
+                <Group wrap="nowrap" align="flex-start" gap="sm">
+                  <Skeleton height={36} width={36} circle />
+                  <Stack gap={8} style={{ flex: 1 }}>
+                    <Skeleton height={12} width="58%" />
+                    <Skeleton height={11} width="40%" />
+                    <Skeleton height={10} width="92%" />
+                    <Skeleton height={10} width="70%" />
+                  </Stack>
+                </Group>
+              </Paper>
+            ))}
+          </Stack>
         ) : soalanList.length === 0 ? (
           <EmptyState
             title="Tiada soalan ditemui"
@@ -313,38 +358,60 @@ export default function SoalanPage() {
                               {formatRelativeTime(item.createdAt)}
                             </Text>
                           </Group>
-                          <Group gap={6} mt={4}>
-                            <Badge color="brand" variant="light" size="sm">
-                              {item.bidangName}
-                            </Badge>
-                          </Group>
                         </div>
 
-                        {canManage && (
-                          <Group gap={4}>
-                            <ActionIcon
-                              variant="light"
-                              color="blue"
-                              onClick={() => openEditModal(item)}
-                              aria-label="Edit soalan"
-                            >
-                              <IconEdit size={16} />
-                            </ActionIcon>
-                            <ActionIcon
-                              variant="light"
-                              color="red"
-                              onClick={() => void handleDeleteSoalan(item.id)}
-                              aria-label="Delete soalan"
-                            >
-                              <IconTrash size={16} />
-                            </ActionIcon>
-                          </Group>
-                        )}
+                        <Group gap={6} align="center">
+                          <Badge color="brand" variant="light" size="sm">
+                            {item.bidangName}
+                          </Badge>
+                          {canManage && (
+                            <Group gap={4}>
+                              <ActionIcon
+                                variant="light"
+                                color="blue"
+                                onClick={() => openEditModal(item)}
+                                aria-label="Edit soalan"
+                              >
+                                <IconEdit size={16} />
+                              </ActionIcon>
+                              <ActionIcon
+                                variant="light"
+                                color="red"
+                                onClick={() => void handleDeleteSoalan(item.id)}
+                                aria-label="Delete soalan"
+                              >
+                                <IconTrash size={16} />
+                              </ActionIcon>
+                            </Group>
+                          )}
+                        </Group>
                       </Group>
 
                       <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
                         {item.content}
                       </Text>
+                      {item.sourceLink && (() => {
+                        const raw = item.sourceLink.trim();
+                        const href = resolveCreditHref(raw);
+                        const label = resolveCreditLabel(item.sourceLink);
+                        return (
+                          <>
+                            <Divider mt={3} mb={1} />
+                            <Box ta="right">
+                              <Text size="xs" c="#F3F5F7">
+                                Kredit:{' '}
+                                {href ? (
+                                  <Anchor href={href} target="_blank" rel="noopener noreferrer" c="blue.4">
+                                    {label}
+                                  </Anchor>
+                                ) : (
+                                  <Text span c="#F3F5F7">{raw}</Text>
+                                )}
+                              </Text>
+                            </Box>
+                          </>
+                        );
+                      })()}
                     </Stack>
                   </Group>
                 </Paper>
@@ -376,6 +443,15 @@ export default function SoalanPage() {
             value={form.bidangId}
             onChange={(value) => setForm((prev) => ({ ...prev, bidangId: value ?? '' }))}
             required
+          />
+
+          <TextInput
+            leftSection={<IconLink size={14} />}
+            label="Kredit / Pautan Sumber (opsyenal)"
+            placeholder="Contoh: https://maukerja.my/... atau Dr Rahman"
+            value={form.sourceLink}
+            onChange={(e) => setForm((prev) => ({ ...prev, sourceLink: e.currentTarget.value }))}
+            size="sm"
           />
 
           <Group justify="flex-end">

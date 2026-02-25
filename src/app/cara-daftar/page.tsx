@@ -7,10 +7,10 @@ import {
   Button,
   Container,
   Group,
-  Loader,
   Modal,
   NumberInput,
   Paper,
+  Skeleton,
   Stack,
   Text,
   TextInput,
@@ -165,9 +165,18 @@ export default function CaraDaftarPage() {
         </Group>
 
         {isLoading ? (
-          <Group justify="center" py="xl">
-            <Loader />
-          </Group>
+          <Stack gap="sm">
+            {[...Array(3)].map((_, index) => (
+              <Paper key={`step-skeleton-${index}`} withBorder p="md" radius="md" bg="#181818">
+                <Stack gap={8}>
+                  <Skeleton height={10} width="28%" />
+                  <Skeleton height={14} width="62%" />
+                  <Skeleton height={10} width="94%" />
+                  <Skeleton height={10} width="70%" />
+                </Stack>
+              </Paper>
+            ))}
+          </Stack>
         ) : steps.length === 0 ? (
           <EmptyState
             title="Tiada langkah tersedia"

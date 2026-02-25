@@ -12,6 +12,7 @@ interface TipRow {
   content: string;
   authorName: string;
   authorToken: string;
+  sourceLink: string | null;
   createdAt: string;
   updatedAt: string;
   labelsSerialized: string | null;
@@ -21,6 +22,7 @@ interface CreateTipBody {
   content?: string;
   authorName?: string;
   authorToken?: string;
+  sourceLink?: string;
   labelIds?: unknown;
   newLabels?: unknown;
 }
@@ -31,6 +33,7 @@ function mapRow(row: TipRow) {
     content: row.content,
     authorName: row.authorName,
     authorToken: row.authorToken,
+    sourceLink: row.sourceLink ?? null,
     labels: parseSerializedLabels(row.labelsSerialized),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -50,6 +53,7 @@ export async function GET(request: Request) {
           t.content,
           t.authorName,
           t.authorToken,
+          t.sourceLink,
           t.createdAt,
           t.updatedAt,
           GROUP_CONCAT(l.id || '::' || l.name, '||') AS labelsSerialized
@@ -87,6 +91,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Author token is required.' }, { status: 400 });
     }
 
+    const sourceLink = body.sourceLink?.trim() || null;
     const labelIds = normalizeLabelIds(body.labelIds);
     const newLabels = normalizeLabelNames(body.newLabels);
     const id = createId();
@@ -96,10 +101,10 @@ export async function POST(request: Request) {
 
     await db
       .prepare(
-        `INSERT INTO "Tip" (id, content, authorName, authorToken, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, ?, ?)`
+        `INSERT INTO "Tip" (id, content, authorName, authorToken, sourceLink, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, ?, ?, ?)`
       )
-      .bind(id, content, normalizedAuthorName, authorToken, timestamp, timestamp)
+      .bind(id, content, normalizedAuthorName, authorToken, sourceLink, timestamp, timestamp)
       .run();
 
     const labels = await resolveTipLabels({ db, labelIds, newLabels });
@@ -118,6 +123,7 @@ export async function POST(request: Request) {
           content,
           authorName: normalizedAuthorName,
           authorToken,
+          sourceLink,
           labels,
           createdAt: timestamp,
           updatedAt: timestamp,

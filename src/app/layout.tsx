@@ -30,7 +30,25 @@ export default function RootLayout({
       </head>
       <body>
         <MantineProviderClient>
-          <Notifications position="top-center" limit={2} containerWidth={280} />
+          <Notifications
+            position="bottom-center"
+            limit={3}
+            containerWidth={320}
+            zIndex={9999}
+            styles={{
+              // Mantine renders multiple fixed roots (top/bottom variants);
+              // setting `bottom` here would stretch top roots and block clicks.
+              root: { gap: 8 },
+              notification: {
+                borderRadius: 12,
+                boxShadow: '0 4px 24px rgba(0,0,0,0.45)',
+                backdropFilter: 'blur(8px)',
+                background: 'rgba(30,30,40,0.95)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                padding: '10px 14px',
+              },
+            }}
+          />
           <ModalsProvider>
             <I18nProvider>
               <AuthProvider>

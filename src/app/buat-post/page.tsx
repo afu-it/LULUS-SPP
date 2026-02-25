@@ -1,26 +1,29 @@
 'use client';
 
 import { useState } from 'react';
-import { Box, Button, Container, Group, Stack, Text, Textarea, ActionIcon } from '@mantine/core';
+import { Box, Button, Container, Group, Stack, Text, Textarea, TextInput, ActionIcon } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useRouter } from 'next/navigation';
-import { IconArrowLeft } from '@tabler/icons-react';
+import { IconArrowLeft, IconLink } from '@tabler/icons-react';
 import { useGuestName } from '@/hooks/useGuestName';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function CreatePostPage() {
   const router = useRouter();
   const { guestName, authorToken, isReady: isGuestReady } = useGuestName();
+  const { isAdmin, adminUsername } = useAuth();
   const [content, setContent] = useState('');
+  const [sourceLink, setSourceLink] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const effectiveAuthorName = isAdmin ? (adminUsername ?? 'Admin') : (guestName || 'Tetamu');
 
   async function handleCreatePost() {
     const trimmed = content.trim();
 
-    if (!trimmed) {
-      return;
-    }
+    if (!trimmed) return;
 
-    if (!authorToken) {
+    if (!authorToken && !isAdmin) {
       notifications.show({
         color: 'red',
         title: 'Ralat',
@@ -37,14 +40,14 @@ export default function CreatePostPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           content: trimmed,
-          authorName: guestName || 'Tetamu',
-          authorToken,
+          authorName: effectiveAuthorName,
+          authorToken: authorToken || 'admin-post',
+          sourceLink: sourceLink.trim() || undefined,
+          isAdminPost: isAdmin,
         }),
       });
 
-      if (!response.ok) {
-        throw new Error('Unable to create post');
-      }
+      if (!response.ok) throw new Error('Unable to create post');
 
       notifications.show({ color: 'green', title: 'Berjaya', message: 'Post berjaya dibuat.' });
       router.push('/');
@@ -56,11 +59,11 @@ export default function CreatePostPage() {
   }
 
   return (
-    <Container px={0} py={0} bg="#0a0a0a" style={{ minHeight: '100vh' }}>
+    <Container px={0} py={0} bg="#181818" style={{ minHeight: '100vh' }}>
       <Box
         pos="sticky"
         top={0}
-        bg="#0a0a0a"
+        bg="#181818"
         style={{ zIndex: 100, borderBottom: '1px solid var(--mantine-color-default-border)' }}
         px="md"
         py="sm"
@@ -82,7 +85,7 @@ export default function CreatePostPage() {
         </Group>
       </Box>
 
-      <Stack p="md">
+      <Stack p="md" gap="md">
         <Textarea
           minRows={6}
           autosize
@@ -93,8 +96,21 @@ export default function CreatePostPage() {
           size="lg"
         />
 
-        <Text size="xs" c="dimmed">
-          {isGuestReady ? `Dipost sebagai: ${guestName || 'Tetamu'}` : 'Menyediakan profil tetamu...'}
+        <TextInput
+          leftSection={<IconLink size={14} />}
+          placeholder="Kredit / pautan sumber (opsyenal), contoh: Dr Rahman atau https://maukerja.my/..."
+          value={sourceLink}
+          onChange={(e) => setSourceLink(e.currentTarget.value)}
+          size="xs"
+          variant="filled"
+        />
+
+        <Text size="xs" c={isAdmin ? undefined : 'dimmed'} style={isAdmin ? { color: '#262e5c', fontWeight: 600 } : undefined}>
+          {isAdmin
+            ? `Dipost sebagai admin: ${effectiveAuthorName}`
+            : isGuestReady
+              ? `Dipost sebagai: ${effectiveAuthorName}`
+              : 'Menyediakan profil tetamu...'}
         </Text>
       </Stack>
     </Container>

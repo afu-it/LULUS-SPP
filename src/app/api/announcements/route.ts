@@ -25,25 +25,27 @@ function mapRow(row: AnnouncementRow) {
   };
 }
 
+// GET — return all active announcements (newest first), plus legacy `item` for backwards compat
 export async function GET() {
   try {
     const db = getDb();
-    const row = await db
+    const rows = await db
       .prepare(
         `SELECT id, content, isActive, createdAt, updatedAt
          FROM "Announcement"
          WHERE isActive = 1
-         ORDER BY updatedAt DESC
-         LIMIT 1`
+         ORDER BY createdAt DESC`
       )
-      .first<AnnouncementRow>();
+      .all<AnnouncementRow>();
 
-    return NextResponse.json({ item: row ? mapRow(row) : null });
+    const items = (rows.results ?? []).map(mapRow);
+    return NextResponse.json({ items, item: items[0] ?? null });
   } catch {
-    return NextResponse.json({ error: 'Unable to fetch announcement.' }, { status: 500 });
+    return NextResponse.json({ error: 'Unable to fetch announcements.' }, { status: 500 });
   }
 }
 
+// POST — create a new announcement (does NOT deactivate old ones anymore)
 export async function POST(request: Request) {
   try {
     const adminSession = await getAdminSession();
@@ -63,10 +65,6 @@ export async function POST(request: Request) {
     const id = createId();
     const timestamp = createTimestamp();
     const db = getDb();
-
-    if (isActive) {
-      await db.prepare(`UPDATE "Announcement" SET isActive = 0, updatedAt = ?`).bind(timestamp).run();
-    }
 
     await db
       .prepare(

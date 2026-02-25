@@ -1,11 +1,12 @@
 -- prisma/seed.sql
 -- Seed data: admin user, default tip labels, default bidang list
--- Admin password: LulusSPP2026!
+-- Admin password: admin
 
 -- ─── Admin ────────────────────────────────────────────────────────────────────
-UPDATE "Admin" 
-SET "passwordHash" = '$2a$10$epD6U/8K.a12oltTOFwWQalqzcX.9e4yoCB4d5X9TF'
-WHERE "username" = 'admin';
+INSERT INTO "Admin" ("id", "username", "passwordHash")
+VALUES ('admin_seed_001', 'admin', '$2a$10$QG5n/k3wHyA5oQpGZQbUtOfLLQus8ZqFYhQCbSO14xUkbUXCWBd9Va')
+ON CONFLICT("username") DO UPDATE
+SET "passwordHash" = excluded."passwordHash";
 
 -- ─── Default TipLabels ────────────────────────────────────────────────────────
 INSERT INTO "TipLabel" ("id", "name") VALUES ('label_01', 'Pemakaian');
