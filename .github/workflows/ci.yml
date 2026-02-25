@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      NEXTJS_ENV: development
+      JWT_SECRET: ci-local-jwt-secret
+      E2E_ADMIN_USERNAME: admin
+      E2E_ADMIN_PASSWORD: LulusSPP2026!
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Prepare local D1 database
+        run: pnpm db:prepare:local
+
+      - name: Build
+        run: pnpm build
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run e2e tests
+        run: pnpm test:e2e

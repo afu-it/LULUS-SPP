@@ -1,0 +1,13 @@
+
+> lulus-spp@0.1.0 dev C:\Users\User\Documents\PROJEK\LULUS SPP
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.3:3000
+
+✓ Starting...
+Using vars defined in .dev.vars
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+✓ Ready in 1824ms
+○ Compiling / ...

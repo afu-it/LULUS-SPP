@@ -1,0 +1,63 @@
+.navbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 100;
+  display: flex;
+  align-items: stretch;
+  background-color: rgba(255, 255, 255, 0.93);
+  backdrop-filter: blur(10px);
+  border-top: 1px solid var(--mantine-color-gray-2);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+
+  @mixin dark {
+    background-color: rgba(23, 24, 28, 0.94);
+    border-top-color: var(--mantine-color-dark-5);
+  }
+}
+
+.navItem {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 58px;
+  padding: 8px 4px;
+  color: var(--mantine-color-gray-6);
+  transition: color 100ms ease;
+
+  &[data-active] {
+    color: var(--mantine-color-brand-8);
+  }
+
+  @mixin hover {
+    color: var(--mantine-color-brand-7);
+    background-color: var(--mantine-color-brand-0);
+  }
+
+  @mixin dark {
+    color: var(--mantine-color-dark-2);
+
+    &[data-active] {
+      color: var(--mantine-color-brand-4);
+    }
+  }
+}
+
+@media (min-width: 48em) {
+  .navbar {
+    left: 50%;
+    right: auto;
+    transform: translateX(-50%);
+    width: min(760px, calc(100% - 24px));
+    border-inline: 1px solid var(--mantine-color-gray-2);
+    border-top-left-radius: 14px;
+    border-top-right-radius: 14px;
+
+    @mixin dark {
+      border-inline-color: var(--mantine-color-dark-5);
+    }
+  }
+}

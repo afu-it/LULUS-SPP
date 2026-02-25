@@ -1,0 +1,213 @@
+
+> lulus-spp@0.1.0 prepreview C:\Users\User\Documents\PROJEK\LULUS SPP
+> pnpm clean:wasm
+
+
+> lulus-spp@0.1.0 clean:wasm C:\Users\User\Documents\PROJEK\LULUS SPP
+> node scripts/stub-wasm.mjs
+
+[stub-wasm] already patched: C:\Users\User\Documents\PROJEK\LULUS SPP\node_modules\.pnpm\next@16.1.6_react-dom@19.2.3_react@19.2.3__react@19.2.3\node_modules\next\dist\compiled\@vercel\og\index.edge.js
+
+> lulus-spp@0.1.0 preview C:\Users\User\Documents\PROJEK\LULUS SPP
+> opennextjs-cloudflare build && opennextjs-cloudflare preview
+
+
+┌─────────────────────────────┐
+│ OpenNext — Cloudflare build │
+└─────────────────────────────┘
+
+WARN OpenNext is not fully compatible with Windows.
+WARN For optimal performance, it is recommended to use Windows Subsystem for Linux (WSL).
+WARN While OpenNext may function on Windows, it could encounter unpredictable failures during runtime.
+App directory: C:\Users\User\Documents\PROJEK\LULUS SPP
+Next.js version : 16.1.6
+@opennextjs/cloudflare version: 1.17.1
+@opennextjs/aws version: 3.9.16
+
+┌─────────────────────────────────┐
+│ OpenNext — Building Next.js app │
+└─────────────────────────────────┘
+
+
+> lulus-spp@0.1.0 build:webpack C:\Users\User\Documents\PROJEK\LULUS SPP
+> next build --webpack
+
+Using vars defined in .dev.vars
+▲ Next.js 16.1.6 (webpack)
+
+  Creating an optimized production build ...
+Using vars defined in .dev.vars
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (138kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (138kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (138kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (138kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+Using vars defined in .dev.vars
+Using vars defined in .dev.vars
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (135kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (137kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
+✓ Compiled successfully in 13.5s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/19) ...
+  Generating static pages using 11 workers (4/19) 
+  Generating static pages using 11 workers (9/19) 
+  Generating static pages using 11 workers (14/19) 
+✓ Generating static pages using 11 workers (19/19) in 721.1ms
+  Finalizing page optimization ...
+  Collecting build traces ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/announcements
+├ ƒ /api/announcements/[id]
+├ ƒ /api/auth
+├ ƒ /api/bidang
+├ ƒ /api/bidang/[id]
+├ ƒ /api/cara-daftar
+├ ƒ /api/cara-daftar/[id]
+├ ƒ /api/labels
+├ ƒ /api/labels/[id]
+├ ƒ /api/notes
+├ ƒ /api/notes/[id]
+├ ƒ /api/posts
+├ ƒ /api/posts/[id]
+├ ƒ /api/posts/[id]/comments
+├ ƒ /api/posts/[id]/comments/[cid]
+├ ƒ /api/posts/[id]/like
+├ ƒ /api/soalan
+├ ƒ /api/soalan/[id]
+├ ƒ /api/tips
+├ ƒ /api/tips/[id]
+├ ○ /cara-daftar
+├ ○ /manifest.webmanifest
+├ ○ /nota
+├ ○ /settings
+├ ○ /soalan
+└ ○ /tips
+
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+┌──────────────────────────────┐
+│ OpenNext — Generating bundle │
+└──────────────────────────────┘
+
+Bundling middleware function...
+Bundling static assets...
+Bundling cache assets...
+Building server function: default...
+Applying code patches: 7.019s
+# copyPackageTemplateFiles
+[35m⚙️ Bundling the OpenNext server...
+[0m
+▲ [WARNING] Duplicate key "options" in object literal [duplicate-object-key]
+
+    .open-next/server-functions/default/.next/server/chunks/123.js:1:319500:
+      1 │ ...ment:c,padding:e}).fn(b):{}},options:[a,b]})},28558:(a,b,c)=>{"u...
+        ╵                                 ~~~~~~~
+
+  The original key "options" is here:
+
+    .open-next/server-functions/default/.next/server/chunks/123.js:1:319274:
+      1 │ ...b]}),t=(a,b)=>({name:"arrow",options:a,fn(b){let{element:c,paddi...
+        ╵                                 ~~~~~~~
+
+[35mWorker saved in `.open-next\worker.js` 🚀
+[0m
+OpenNext build complete.
+
+┌───────────────────────────────┐
+│ OpenNext — Cloudflare preview │
+└───────────────────────────────┘
+
+WARN OpenNext is not fully compatible with Windows.
+WARN For optimal performance, it is recommended to use Windows Subsystem for Linux (WSL).
+WARN While OpenNext may function on Windows, it could encounter unpredictable failures during runtime.
+Using vars defined in .dev.vars
+Incremental cache does not need populating
+Tag cache does not need populating
+
+ ⛅️ wrangler 4.68.1
+───────────────────
+Using vars defined in .dev.vars
+Your Worker has access to the following bindings:
+Binding                            Resource                  Mode
+env.DB (lulus-spp-db)              D1 Database               local
+env.ASSETS                         Assets                    local
+env.NEXTJS_ENV ("(hidden)")        Environment Variable      local
+env.JWT_SECRET ("(hidden)")        Environment Variable      local
+
+⎔ Starting local server...
+[wrangler:info] Ready on http://127.0.0.1:8787
+[wrangler:info] GET / 200 OK (383ms)
+[wrangler:info] GET /nota 200 OK (41ms)
+[wrangler:info] GET /tips 200 OK (58ms)
+[wrangler:info] GET /soalan 200 OK (40ms)
+[wrangler:info] GET /cara-daftar 200 OK (46ms)
+[wrangler:info] GET /manifest.webmanifest 200 OK (31ms)
+[wrangler:info] GET /icons/icon-192.svg 200 OK (16ms)
+[wrangler:info] GET /api/posts 200 OK (42ms)
+[wrangler:info] GET /api/notes 200 OK (16ms)
+[wrangler:info] GET /api/tips 200 OK (20ms)
+[wrangler:info] GET /api/soalan 200 OK (20ms)
+[wrangler:info] GET /api/cara-daftar 200 OK (15ms)
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDuplicate key "options" in object literal[0m [duplicate-object-key]
+
+    .open-next/server-functions/default/handler.mjs:169:120005:
+[37m      169 │ ...:c2,padding:e2}).fn(b3):{}},[32moptions[37m:[a2,b2]})},28558:(a,b,c)=>...
+          ╵                                [32m~~~~~~~[0m
+
+  The original key "options" is here:
+
+    .open-next/server-functions/default/handler.mjs:169:119763:
+[37m      169 │ ...),t=(a2,b2)=>({name:"arrow",[32moptions[37m:a2,fn(b3){let{element:c2,p...
+          ╵                                [32m~~~~~~~[0m
+
+
+ERROR Wrangler dev command failed:
+[33m▲ [43;33m[[43;30mWARNING[43;33m][0m [1mDuplicate key "options" in object literal[0m [duplicate-object-key]
+
+    .open-next/server-functions/default/handler.mjs:169:120005:
+[37m      169 │ ...:c2,padding:e2}).fn(b3):{}},[32moptions[37m:[a2,b2]})},28558:(a,b,c)=>...
+          ╵                                [32m~~~~~~~[0m
+
+  The original key "options" is here:
+
+    .open-next/server-functions/default/handler.mjs:169:119763:
+[37m      169 │ ...),t=(a2,b2)=>({name:"arrow",[32moptions[37m:a2,fn(b3){let{element:c2,p...
+          ╵                                [32m~~~~~~~[0m
+
+
+
+ ELIFECYCLE  Command failed with exit code 1.

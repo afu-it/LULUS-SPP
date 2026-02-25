@@ -1,0 +1,13 @@
+
+> lulus-spp@0.1.0 dev C:\Users\User\Documents\PROJEK\LULUS SPP
+> next dev
+
+▲ Next.js 16.1.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.3:3000
+
+✓ Starting...
+Using vars defined in .dev.vars
+✓ Ready in 1836ms
+ POST /api/auth 200 in 682ms (compile: 484ms, render: 197ms)
+ ELIFECYCLE  Command failed with exit code 143.

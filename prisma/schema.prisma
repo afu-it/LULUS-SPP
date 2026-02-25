@@ -1,0 +1,118 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Post {
+  id          String    @id @default(cuid())
+  content     String
+  authorName  String
+  authorToken String
+  isPinned    Boolean   @default(false)
+  likes       Int       @default(0)
+  comments    Comment[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Comment {
+  id          String   @id @default(cuid())
+  content     String
+  authorName  String
+  authorToken String
+  postId      String
+  post        Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model Announcement {
+  id        String   @id @default(cuid())
+  content   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Note {
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  link        String?
+  authorName  String
+  authorToken String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tip {
+  id          String       @id @default(cuid())
+  content     String
+  authorName  String
+  authorToken String
+  labels      TipToLabel[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model TipLabel {
+  id   String       @id @default(cuid())
+  name String       @unique
+  tips TipToLabel[]
+}
+
+model TipToLabel {
+  tip      Tip      @relation(fields: [tipId], references: [id], onDelete: Cascade)
+  tipId    String
+  label    TipLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+  labelId  String
+  @@id([tipId, labelId])
+}
+
+model Soalan {
+  id          String   @id @default(cuid())
+  content     String
+  bidangId    String
+  bidang      Bidang   @relation(fields: [bidangId], references: [id])
+  authorName  String
+  authorToken String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Bidang {
+  id     String   @id @default(cuid())
+  name   String   @unique
+  soalan Soalan[]
+}
+
+model CaraDaftarStep {
+  id        String   @id @default(cuid())
+  stepNo    Int
+  title     String
+  content   String
+  linkUrl   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuthRateLimit {
+  key             String @id
+  failCount       Int    @default(0)
+  windowStartedAt Int
+  blockedUntil    Int?
+  updatedAt       Int
+
+  @@index([updatedAt])
+}

@@ -1,0 +1,57 @@
+
+> lulus-spp@0.1.0 build C:\Users\User\Documents\PROJEK\LULUS SPP
+> next build
+
+Using vars defined in .dev.vars
+▲ Next.js 16.1.6 (Turbopack)
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead. Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+Using vars defined in .dev.vars
+✓ Compiled successfully in 4.2s
+  Running TypeScript ...
+  Collecting page data using 11 workers ...
+  Generating static pages using 11 workers (0/20) ...
+  Generating static pages using 11 workers (5/20) 
+  Generating static pages using 11 workers (10/20) 
+  Generating static pages using 11 workers (15/20) 
+✓ Generating static pages using 11 workers (20/20) in 369.4ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/announcements
+├ ƒ /api/announcements/[id]
+├ ƒ /api/auth
+├ ƒ /api/bidang
+├ ƒ /api/bidang/[id]
+├ ƒ /api/cara-daftar
+├ ƒ /api/cara-daftar/[id]
+├ ƒ /api/health
+├ ƒ /api/labels
+├ ƒ /api/labels/[id]
+├ ƒ /api/notes
+├ ƒ /api/notes/[id]
+├ ƒ /api/posts
+├ ƒ /api/posts/[id]
+├ ƒ /api/posts/[id]/comments
+├ ƒ /api/posts/[id]/comments/[cid]
+├ ƒ /api/posts/[id]/like
+├ ƒ /api/soalan
+├ ƒ /api/soalan/[id]
+├ ƒ /api/tips
+├ ƒ /api/tips/[id]
+├ ○ /cara-daftar
+├ ○ /manifest.webmanifest
+├ ○ /nota
+├ ○ /settings
+├ ○ /soalan
+└ ○ /tips
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+

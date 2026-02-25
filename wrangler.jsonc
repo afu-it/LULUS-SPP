@@ -1,0 +1,21 @@
+{
+  // OpenNext Cloudflare adapter output paths
+  "name": "lulus-spp",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2024-09-23",
+  "compatibility_flags": ["nodejs_compat"],
+
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+
+  // D1 database binding — binding name "DB" must match getPrisma() in src/lib/prisma.ts
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "lulus-spp-db",
+      "database_id": "6bfbbcfd-3e2a-473d-911d-e52dcb26468f"
+    }
+  ]
+}
