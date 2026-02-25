@@ -16,6 +16,7 @@ interface PostRow {
   authorToken: string;
   isPinned: number | boolean;
   likes: number;
+  reposts: number;
   createdAt: string;
   updatedAt: string;
   commentsCount: number;
@@ -29,6 +30,7 @@ function mapPostRow(row: PostRow) {
     authorToken: row.authorToken,
     isPinned: asBoolean(row.isPinned),
     likes: Number(row.likes ?? 0),
+    reposts: Number(row.reposts ?? 0),
     commentsCount: Number(row.commentsCount ?? 0),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -54,6 +56,7 @@ export async function GET(request: Request) {
           p.authorToken,
           p.isPinned,
           p.likes,
+          p.reposts,
           p.createdAt,
           p.updatedAt,
           COUNT(c.id) AS commentsCount
@@ -131,8 +134,8 @@ export async function POST(request: Request) {
     const db = getDb();
     await db
       .prepare(
-        `INSERT INTO "Post" (id, content, authorName, authorToken, isPinned, likes, createdAt, updatedAt)
-         VALUES (?, ?, ?, ?, 0, 0, ?, ?)`
+        `INSERT INTO "Post" (id, content, authorName, authorToken, isPinned, likes, reposts, createdAt, updatedAt)
+         VALUES (?, ?, ?, ?, 0, 0, 0, ?, ?)`
       )
       .bind(id, content.value, normalizedAuthorName, authorToken.value, createdAt, createdAt)
       .run();
@@ -146,6 +149,7 @@ export async function POST(request: Request) {
           authorToken: authorToken.value,
           isPinned: false,
           likes: 0,
+          reposts: 0,
           commentsCount: 0,
           createdAt,
           updatedAt: createdAt,

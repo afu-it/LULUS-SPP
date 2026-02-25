@@ -15,8 +15,9 @@ export function FAB({ label, icon, onClick }: FABProps) {
       <ActionIcon
         className={classes.fab}
         size={56}
-        radius="xl"
-        color="brand"
+        radius={8}
+        bg="#1d1d1d"
+        c="white"
         variant="filled"
         onClick={onClick}
         aria-label={label}

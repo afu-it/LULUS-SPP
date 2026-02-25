@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActionIcon,
+  Avatar,
   Badge,
   Button,
   Container,
@@ -21,7 +22,7 @@ import {
 import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatDateTime } from '@/lib/date';
+import { formatDateTime, formatRelativeTime } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestName } from '@/hooks/useGuestName';
 import type { TipItem, TipLabelItem } from '@/types/entities';
@@ -237,49 +238,57 @@ export default function TipsPage() {
               const canManage = isAdmin || (authorToken ? tip.authorToken === authorToken : false);
 
               return (
-                <Paper key={tip.id} withBorder p="md" radius="md">
-                  <Stack gap={6}>
-                    <Group justify="space-between" align="flex-start" wrap="nowrap">
-                      <div>
-                        <Text size="xs" c="dimmed">
-                          Oleh {tip.authorName} • {formatDateTime(tip.createdAt)}
-                        </Text>
-                      </div>
-
-                      {canManage && (
-                        <Group gap={4}>
-                          <ActionIcon
-                            variant="light"
-                            color="blue"
-                            onClick={() => openEditModal(tip)}
-                            aria-label="Edit tip"
-                          >
-                            <IconEdit size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="light"
-                            color="red"
-                            onClick={() => void handleDeleteTip(tip.id)}
-                            aria-label="Delete tip"
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
+                <Paper key={tip.id} withBorder p="md" radius="md" bg="#181818">
+                  <Group wrap="nowrap" align="flex-start" gap="sm">
+                    <Avatar color="yellow" radius="xl" size="md">
+                      {tip.authorName.charAt(0).toUpperCase() || 'T'}
+                    </Avatar>
+                    <Stack gap={6} style={{ flex: 1 }}>
+                      <Group justify="space-between" align="flex-start" wrap="nowrap">
+                        <Group gap={6} align="center">
+                          <Text fw={600} size="sm">
+                            {tip.authorName}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {formatRelativeTime(tip.createdAt)}
+                          </Text>
                         </Group>
-                      )}
-                    </Group>
 
-                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                      {tip.content}
-                    </Text>
+                        {canManage && (
+                          <Group gap={4}>
+                            <ActionIcon
+                              variant="light"
+                              color="blue"
+                              onClick={() => openEditModal(tip)}
+                              aria-label="Edit tip"
+                            >
+                              <IconEdit size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="light"
+                              color="red"
+                              onClick={() => void handleDeleteTip(tip.id)}
+                              aria-label="Delete tip"
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Group>
+                        )}
+                      </Group>
 
-                    <Group gap={6}>
-                      {tip.labels.map((label) => (
-                        <Badge key={label.id} color="brand" variant="light">
-                          {label.name}
-                        </Badge>
-                      ))}
-                    </Group>
-                  </Stack>
+                      <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                        {tip.content}
+                      </Text>
+
+                      <Group gap={6}>
+                        {tip.labels.map((label) => (
+                          <Badge key={label.id} color="brand" variant="light" size="sm">
+                            {label.name}
+                          </Badge>
+                        ))}
+                      </Group>
+                    </Stack>
+                  </Group>
                 </Paper>
               );
             })}

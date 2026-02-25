@@ -13,6 +13,7 @@ export interface PostItem {
   authorToken: string;
   isPinned: boolean;
   likes: number;
+  reposts: number;
   commentsCount: number;
   createdAt: string;
   updatedAt: string;

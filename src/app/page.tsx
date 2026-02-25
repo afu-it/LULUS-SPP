@@ -3,26 +3,47 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActionIcon,
+  Avatar,
   Badge,
+  Box,
   Button,
   Container,
+  Divider,
   Group,
   Loader,
+  Menu,
   Modal,
   Paper,
+  Skeleton,
   Stack,
   Text,
   Textarea,
-  Title,
 } from '@mantine/core';
-import { IconMessageCircle, IconMessagePlus, IconPin, IconThumbUp, IconTrash } from '@tabler/icons-react';
+import { 
+  IconBookmark,
+  IconDots,
+  IconHeart,
+  IconLink,
+  IconMessageCircle, 
+  IconMessagePlus, 
+  IconPin, 
+  IconRepeat,
+  IconSearch, 
+  IconThumbUp, 
+  IconTrash,
+  IconUserCircle,
+  IconBell
+} from '@tabler/icons-react';
+import { useWindowScroll } from '@mantine/hooks';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
 import { FAB } from '@/components/common/FAB';
-import { formatDateTime } from '@/lib/date';
+import { formatDateTime, formatRelativeTime } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestName } from '@/hooks/useGuestName';
-import type { AnnouncementItem, CommentItem, PostItem } from '@/types/entities';
+import type { CommentItem, PostItem } from '@/types/entities';
 
 const POSTS_PAGE_SIZE = 10;
 const LIKED_POSTS_STORAGE_KEY = 'lulus-spp:liked-posts';
@@ -38,31 +59,36 @@ function sortPosts(items: PostItem[]) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const { isAdmin } = useAuth();
   const { guestName, authorToken, isReady: isGuestReady } = useGuestName();
 
-  const [announcement, setAnnouncement] = useState<AnnouncementItem | null>(null);
   const [posts, setPosts] = useState<PostItem[]>([]);
   const [commentsByPost, setCommentsByPost] = useState<Record<string, CommentItem[]>>({});
   const [expandedPostIds, setExpandedPostIds] = useState<Record<string, boolean>>({});
   const [likedPostIds, setLikedPostIds] = useState<string[]>([]);
+  const [repostedPostIds, setRepostedPostIds] = useState<string[]>([]);
 
   const [isLoadingPosts, setIsLoadingPosts] = useState(true);
-  const [isLoadingAnnouncement, setIsLoadingAnnouncement] = useState(true);
-  const [isSubmittingPost, setIsSubmittingPost] = useState(false);
-  const [isSubmittingAnnouncement, setIsSubmittingAnnouncement] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const [postOffset, setPostOffset] = useState(0);
   const [hasMorePosts, setHasMorePosts] = useState(false);
-
-  const [isPostModalOpen, setIsPostModalOpen] = useState(false);
-  const [isAnnouncementModalOpen, setIsAnnouncementModalOpen] = useState(false);
-
-  const [newPostContent, setNewPostContent] = useState('');
-  const [announcementDraft, setAnnouncementDraft] = useState('');
   const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>({});
   const [loadingCommentsByPost, setLoadingCommentsByPost] = useState<Record<string, boolean>>({});
+
+  const [scroll] = useWindowScroll();
+  const [lastScrollY, setLastScrollY] = useState(0);
+  const [showFAB, setShowFAB] = useState(false);
+
+  useEffect(() => {
+    if (scroll.y > lastScrollY) {
+      setShowFAB(true);
+    } else if (scroll.y < lastScrollY) {
+      setShowFAB(false);
+    }
+    setLastScrollY(scroll.y);
+  }, [scroll.y, lastScrollY]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(LIKED_POSTS_STORAGE_KEY);
@@ -83,25 +109,6 @@ export default function HomePage() {
   useEffect(() => {
     window.localStorage.setItem(LIKED_POSTS_STORAGE_KEY, JSON.stringify(likedPostIds));
   }, [likedPostIds]);
-
-  async function loadAnnouncement() {
-    setIsLoadingAnnouncement(true);
-
-    try {
-      const response = await fetch('/api/announcements', { cache: 'no-store' });
-      const data = (await response.json()) as { item: AnnouncementItem | null };
-      setAnnouncement(data.item ?? null);
-      setAnnouncementDraft(data.item?.content ?? '');
-    } catch {
-      notifications.show({
-        color: 'red',
-        title: 'Ralat',
-        message: 'Tidak dapat memuat pengumuman.',
-      });
-    } finally {
-      setIsLoadingAnnouncement(false);
-    }
-  }
 
   async function loadPosts(reset = false) {
     const offset = reset ? 0 : postOffset;
@@ -144,56 +151,10 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    void loadAnnouncement();
+    if (!isGuestReady) return;
     void loadPosts(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  async function handleCreatePost() {
-    const content = newPostContent.trim();
-
-    if (!content) {
-      return;
-    }
-
-    if (!authorToken) {
-      notifications.show({
-        color: 'red',
-        title: 'Ralat',
-        message: 'Author token belum tersedia. Cuba lagi sebentar.',
-      });
-      return;
-    }
-
-    setIsSubmittingPost(true);
-
-    try {
-      const response = await fetch('/api/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content,
-          authorName: guestName || 'Tetamu',
-          authorToken,
-        }),
-      });
-
-      const data = (await response.json()) as { item?: PostItem; error?: string };
-
-      if (!response.ok || !data.item) {
-        throw new Error(data.error ?? 'Unable to create post');
-      }
-
-      setPosts((prev) => sortPosts([data.item as PostItem, ...prev]));
-      setNewPostContent('');
-      setIsPostModalOpen(false);
-      notifications.show({ color: 'green', title: 'Berjaya', message: 'Post berjaya dibuat.' });
-    } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat membuat post.' });
-    } finally {
-      setIsSubmittingPost(false);
-    }
-  }
+  }, [isGuestReady]);
 
   async function handleToggleLike(post: PostItem) {
     const isLiked = likedPostIds.includes(post.id);
@@ -227,6 +188,40 @@ export default function HomePage() {
     }
   }
 
+  async function handleToggleRepost(post: PostItem) {
+    const isReposted = repostedPostIds.includes(post.id);
+    const action = isReposted ? 'unrepost' : 'repost';
+
+    try {
+      const response = await fetch(`/api/posts/${post.id}/repost`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+
+      const data = (await response.json()) as { reposts?: number };
+
+      if (!response.ok || typeof data.reposts !== 'number') {
+        throw new Error('Unable to repost');
+      }
+
+      setPosts((prev) =>
+        prev.map((item) => (item.id === post.id ? { ...item, reposts: Number(data.reposts) } : item))
+      );
+
+      setRepostedPostIds((prev) => {
+        if (isReposted) {
+          return prev.filter((id) => id !== post.id);
+        }
+        return [...prev, post.id];
+      });
+      
+      notifications.show({ color: 'green', message: isReposted ? 'Repost dibatalkan.' : 'Post direpost.' });
+    } catch {
+      notifications.show({ color: 'red', message: 'Tidak dapat mengemas kini repost.' });
+    }
+  }
+
   async function handleTogglePin(post: PostItem) {
     try {
       const response = await fetch(`/api/posts/${post.id}`, {
@@ -243,7 +238,7 @@ export default function HomePage() {
         sortPosts(prev.map((item) => (item.id === post.id ? { ...item, isPinned: !item.isPinned } : item)))
       );
     } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat kemas kini pin post.' });
+      notifications.show({ color: 'red', message: 'Tidak dapat kemas kini pin post.' });
     }
   }
 
@@ -264,9 +259,9 @@ export default function HomePage() {
       }
 
       setPosts((prev) => prev.filter((item) => item.id !== postId));
-      notifications.show({ color: 'green', title: 'Berjaya', message: 'Post berjaya dipadam.' });
+      notifications.show({ color: 'green', message: 'Post berjaya dipadam.' });
     } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat padam post.' });
+      notifications.show({ color: 'red', message: 'Tidak dapat padam post.' });
     }
   }
 
@@ -296,7 +291,7 @@ export default function HomePage() {
 
       setCommentsByPost((prev) => ({ ...prev, [postId]: data.items ?? [] }));
     } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat memuat komen.' });
+      notifications.show({ color: 'red', message: 'Tidak dapat memuat komen.' });
     } finally {
       setLoadingCommentsByPost((prev) => ({ ...prev, [postId]: false }));
     }
@@ -338,7 +333,7 @@ export default function HomePage() {
 
       setCommentDrafts((prev) => ({ ...prev, [postId]: '' }));
     } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat tambah komen.' });
+      notifications.show({ color: 'red', message: 'Tidak dapat tambah komen.' });
     }
   }
 
@@ -369,42 +364,7 @@ export default function HomePage() {
         )
       );
     } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat padam komen.' });
-    }
-  }
-
-  async function handleSaveAnnouncement() {
-    const content = announcementDraft.trim();
-
-    if (!content) {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Isi pengumuman diperlukan.' });
-      return;
-    }
-
-    setIsSubmittingAnnouncement(true);
-
-    try {
-      const isEditing = Boolean(announcement?.id);
-      const response = await fetch(
-        isEditing ? `/api/announcements/${announcement?.id}` : '/api/announcements',
-        {
-          method: isEditing ? 'PUT' : 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ content, isActive: true }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Unable to save announcement');
-      }
-
-      await loadAnnouncement();
-      setIsAnnouncementModalOpen(false);
-      notifications.show({ color: 'green', title: 'Berjaya', message: 'Pengumuman dikemas kini.' });
-    } catch {
-      notifications.show({ color: 'red', title: 'Ralat', message: 'Tidak dapat simpan pengumuman.' });
-    } finally {
-      setIsSubmittingAnnouncement(false);
+      notifications.show({ color: 'red', message: 'Tidak dapat padam komen.' });
     }
   }
 
@@ -417,55 +377,70 @@ export default function HomePage() {
   }, [posts.length]);
 
   return (
-    <Container py="md">
-      <Stack gap="md">
-        <Group justify="space-between" align="flex-start">
-          <div>
-            <Title order={2}>HOME</Title>
-            <Text size="sm" c="dimmed">
-              {postCountLabel}
-            </Text>
-          </div>
-          {isAdmin && (
-            <Button size="xs" variant="light" onClick={() => setIsAnnouncementModalOpen(true)}>
-              Edit Pengumuman
-            </Button>
-          )}
+    <Container px={0} py={0}>
+      {/* ── Custom Sticky Header ── */}
+      <Box
+        pos="sticky"
+        top={0}
+        bg="#181818"
+        style={{ zIndex: 100, borderBottom: '1px solid var(--mantine-color-default-border)' }}
+        px="md"
+        py="xs"
+      >
+        <Group align="center" wrap="nowrap" pos="relative" style={{ minHeight: 32 }}>
+          <Box style={{ flex: 1 }} />
+          <Text fw={800} size="lg" style={{ letterSpacing: '1px', position: 'absolute', left: '50%', transform: 'translateX(-50%)' }}>
+            LULUS SPP
+          </Text>
+          <Group gap="xs" style={{ flex: 1, justifyItems: 'flex-end', justifyContent: 'flex-end' }}>
+            <ActionIcon
+              component={Link}
+              href="/notifications"
+              variant="subtle"
+              color="gray"
+              size="lg"
+              aria-label="Notifikasi"
+            >
+              <IconBell size={22} />
+            </ActionIcon>
+            <ActionIcon
+              component={Link}
+              href="/search"
+              variant="subtle"
+              color="gray"
+              size="lg"
+              aria-label="Search"
+            >
+              <IconSearch size={22} />
+            </ActionIcon>
+          </Group>
         </Group>
+      </Box>
 
-        {!isLoadingAnnouncement && announcement && (
-          <Paper withBorder p="md" radius="md" style={{ position: 'sticky', top: 8, zIndex: 10 }}>
-            <Stack gap={4}>
-              <Group justify="space-between">
-                <Badge color="brand" variant="filled">
-                  Pengumuman
-                </Badge>
-                <Text size="xs" c="dimmed">
-                  {formatDateTime(announcement.updatedAt)}
-                </Text>
-              </Group>
-              <Text size="sm">{announcement.content}</Text>
-            </Stack>
-          </Paper>
-        )}
-
-        {isLoadingAnnouncement && (
-          <Group justify="center">
-            <Loader size="sm" />
-          </Group>
-        )}
-
+      <Stack gap={0}>
         {isLoadingPosts ? (
-          <Group justify="center" py="lg">
-            <Loader />
-          </Group>
+          <Stack gap={0}>
+            {[...Array(5)].map((_, i) => (
+              <Box key={i} p="md" bg="#181818">
+                <Group wrap="nowrap" align="flex-start" gap="sm">
+                  <Skeleton height={40} width={40} circle />
+                  <Stack gap="sm" style={{ flex: 1 }}>
+                    <Skeleton height={14} width="40%" />
+                    <Skeleton height={14} width="90%" mt={4} />
+                    <Skeleton height={14} width="60%" mt={4} />
+                  </Stack>
+                </Group>
+                <Divider mt="md" />
+              </Box>
+            ))}
+          </Stack>
         ) : posts.length === 0 ? (
           <EmptyState
             title="Belum ada post"
             description="Jadi yang pertama berkongsi pengalaman atau tips SPP anda."
           />
         ) : (
-          <Stack gap="sm">
+          <Stack gap={0}>
             {posts.map((post) => {
               const isOwner = Boolean(authorToken && authorToken === post.authorToken);
               const canDelete = isOwner || isAdmin;
@@ -474,141 +449,188 @@ export default function HomePage() {
               const comments = commentsByPost[post.id] ?? [];
 
               return (
-                <Paper key={post.id} withBorder p="md" radius="md">
-                  <Stack gap="sm">
-                    <Group justify="space-between" align="flex-start" wrap="nowrap">
-                      <Stack gap={2}>
-                        <Group gap={6}>
-                          <Text fw={600} size="sm">
-                            {post.authorName}
-                          </Text>
-                          {post.isPinned && (
-                            <Badge color="yellow" variant="light" leftSection={<IconPin size={12} />}>
-                              Pinned
-                            </Badge>
-                          )}
-                        </Group>
-                        <Text size="xs" c="dimmed">
-                          {formatDateTime(post.createdAt)}
-                        </Text>
-                      </Stack>
-
-                      <Group gap={4}>
-                        {isAdmin && (
-                          <ActionIcon
-                            variant={post.isPinned ? 'filled' : 'light'}
-                            color={post.isPinned ? 'yellow' : 'gray'}
-                            onClick={() => void handleTogglePin(post)}
-                            aria-label="Pin post"
-                          >
-                            <IconPin size={16} />
-                          </ActionIcon>
-                        )}
-
-                        {canDelete && (
-                          <ActionIcon
-                            variant="light"
-                            color="red"
-                            onClick={() => void handleDeletePost(post.id)}
-                            aria-label="Delete post"
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        )}
-                      </Group>
-                    </Group>
-
-                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                      {post.content}
-                    </Text>
-
-                    <Group gap="xs">
-                      <Button
-                        size="xs"
-                        variant={isLiked ? 'filled' : 'light'}
-                        color={isLiked ? 'brand' : 'gray'}
-                        leftSection={<IconThumbUp size={14} />}
-                        onClick={() => void handleToggleLike(post)}
-                      >
-                        {post.likes}
-                      </Button>
-
-                      <Button
-                        size="xs"
-                        variant="light"
-                        color="gray"
-                        leftSection={<IconMessageCircle size={14} />}
-                        onClick={() => void handleToggleComments(post.id)}
-                      >
-                        {post.commentsCount} komen
-                      </Button>
-                    </Group>
-
-                    {isExpanded && (
-                      <Stack gap="xs" pt={6}>
-                        {loadingCommentsByPost[post.id] ? (
-                          <Group justify="center" py={8}>
-                            <Loader size="sm" />
+                <Box key={post.id}>
+                  <Box p="md" bg="#181818">
+                    <Group wrap="nowrap" align="flex-start" gap="sm">
+                      <ActionIcon variant="transparent" size={40} radius="xl">
+                        <IconUserCircle size={40} stroke={1.5} color="var(--mantine-color-dimmed)" />
+                      </ActionIcon>
+                      <Stack gap={0} style={{ flex: 1 }}>
+                        <Group justify="space-between" align="flex-start" wrap="nowrap">
+                          <Group gap={6} align="baseline">
+                            <Text fw={600} size="sm" lh={1.2}>
+                              {post.authorName}
+                            </Text>
+                            <Text size="xs" c="dimmed" lh={1.2}>
+                              {formatRelativeTime(post.createdAt)}
+                            </Text>
+                            {post.isPinned && (
+                              <Badge color="yellow" variant="light" leftSection={<IconPin size={12} />}>
+                                Pinned
+                              </Badge>
+                            )}
                           </Group>
-                        ) : comments.length === 0 ? (
-                          <Text size="xs" c="dimmed">
-                            Belum ada komen.
-                          </Text>
-                        ) : (
-                          comments.map((comment) => {
-                            const canDeleteComment = isAdmin || comment.authorToken === authorToken;
 
-                            return (
-                              <Paper key={comment.id} withBorder p="xs" radius="sm">
-                                <Group justify="space-between" align="flex-start" wrap="nowrap">
-                                  <div>
-                                    <Text size="xs" fw={600}>
-                                      {comment.authorName}
-                                    </Text>
-                                    <Text size="xs" c="dimmed">
-                                      {formatDateTime(comment.createdAt)}
-                                    </Text>
-                                    <Text size="sm" mt={2}>
-                                      {comment.content}
-                                    </Text>
-                                  </div>
+                        <Menu position="bottom-end" withinPortal>
+                          <Menu.Target>
+                            <ActionIcon variant="subtle" color="gray" aria-label="Settings">
+                              <IconDots size={18} />
+                            </ActionIcon>
+                          </Menu.Target>
+                          <Menu.Dropdown>
+                            <Menu.Item 
+                              leftSection={<IconLink size={14} />} 
+                              onClick={() => {
+                                navigator.clipboard.writeText(window.location.origin);
+                                notifications.show({ message: 'Pautan disalin.', color: 'green' });
+                              }}
+                            >
+                              Salin Pautan
+                            </Menu.Item>
+                            <Menu.Item leftSection={<IconBookmark size={14} />}>
+                              Simpan (Akan datang)
+                            </Menu.Item>
 
-                                  {canDeleteComment && (
-                                    <ActionIcon
-                                      size="sm"
-                                      variant="subtle"
-                                      color="red"
-                                      onClick={() => void handleDeleteComment(post.id, comment.id)}
-                                      aria-label="Delete comment"
-                                    >
-                                      <IconTrash size={14} />
-                                    </ActionIcon>
-                                  )}
-                                </Group>
-                              </Paper>
-                            );
-                          })
-                        )}
+                            {isAdmin && (
+                              <Menu.Item
+                                color={post.isPinned ? 'yellow' : 'gray'}
+                                leftSection={<IconPin size={14} />}
+                                onClick={() => void handleTogglePin(post)}
+                              >
+                                {post.isPinned ? 'Unpin Post' : 'Pin Post'}
+                              </Menu.Item>
+                            )}
 
-                        <Textarea
-                          minRows={2}
-                          autosize
-                          value={commentDrafts[post.id] ?? ''}
-                          onChange={(event) =>
-                            setCommentDrafts((prev) => ({ ...prev, [post.id]: event.currentTarget.value }))
-                          }
-                          placeholder="Tulis komen anda..."
-                        />
+                            {canDelete && (
+                              <>
+                                <Menu.Divider />
+                                <Menu.Item
+                                  color="red"
+                                  leftSection={<IconTrash size={14} />}
+                                  onClick={() => void handleDeletePost(post.id)}
+                                >
+                                  Padam Post
+                                </Menu.Item>
+                              </>
+                            )}
+                          </Menu.Dropdown>
+                        </Menu>
+                      </Group>
 
-                        <Group justify="flex-end">
-                          <Button size="xs" onClick={() => void handleCreateComment(post.id)}>
-                            Hantar komen
-                          </Button>
-                        </Group>
-                      </Stack>
-                    )}
-                  </Stack>
-                </Paper>
+                      <Text size="sm" mt={-4} style={{ whiteSpace: 'pre-wrap' }}>
+                        {post.content}
+                      </Text>
+
+                      <Group gap="md">
+                        <Button
+                          size="xs"
+                          variant="transparent"
+                          color={isLiked ? 'red' : 'gray'}
+                          px={0}
+                          leftSection={<IconHeart size={20} fill={isLiked ? 'red' : 'transparent'} />}
+                          onClick={() => void handleToggleLike(post)}
+                        >
+                          {post.likes}
+                        </Button>
+
+                        <Button
+                          size="xs"
+                          variant="transparent"
+                          color="gray"
+                          px={0}
+                          leftSection={<IconMessageCircle size={20} />}
+                          onClick={() => void handleToggleComments(post.id)}
+                        >
+                          {post.commentsCount}
+                        </Button>
+
+                        <Button
+                          size="xs"
+                          variant="transparent"
+                          color={repostedPostIds.includes(post.id) ? 'green' : 'gray'}
+                          px={0}
+                          leftSection={<IconRepeat size={20} />}
+                          onClick={() => void handleToggleRepost(post)}
+                        >
+                          {post.reposts || 0}
+                        </Button>
+                      </Group>
+
+                      {isExpanded && (
+                        <Stack gap="xs" pt={6}>
+                          {loadingCommentsByPost[post.id] ? (
+                            <Group justify="center" py={8}>
+                              <Loader size="sm" />
+                            </Group>
+                          ) : comments.length === 0 ? (
+                            <Text size="xs" c="dimmed">
+                              Belum ada komen.
+                            </Text>
+                          ) : (
+                            comments.map((comment) => {
+                              const canDeleteComment = isAdmin || comment.authorToken === authorToken;
+
+                              return (
+                                <Box key={comment.id} p="xs" bg="var(--mantine-color-default-hover)" style={{ borderRadius: '4px' }}>
+                                  <Group justify="space-between" align="flex-start" wrap="nowrap">
+                                    <Group wrap="nowrap" align="flex-start" gap="xs">
+                                      <Avatar color="blue" radius="xl" size="sm">
+                                        {comment.authorName.charAt(0).toUpperCase() || 'T'}
+                                      </Avatar>
+                                      <div>
+                                        <Group gap={6} align="center">
+                                          <Text size="sm" fw={600}>
+                                            {comment.authorName}
+                                          </Text>
+                                          <Text size="xs" c="dimmed">
+                                            {formatRelativeTime(comment.createdAt)}
+                                          </Text>
+                                        </Group>
+                                        <Text size="sm" mt={2}>
+                                          {comment.content}
+                                        </Text>
+                                      </div>
+                                    </Group>
+
+                                    {canDeleteComment && (
+                                      <ActionIcon
+                                        size="sm"
+                                        variant="subtle"
+                                        color="red"
+                                        onClick={() => void handleDeleteComment(post.id, comment.id)}
+                                        aria-label="Delete comment"
+                                      >
+                                        <IconTrash size={14} />
+                                      </ActionIcon>
+                                    )}
+                                  </Group>
+                                </Box>
+                              );
+                            })
+                          )}
+
+                          <Textarea
+                            minRows={2}
+                            autosize
+                            value={commentDrafts[post.id] ?? ''}
+                            onChange={(event) =>
+                              setCommentDrafts((prev) => ({ ...prev, [post.id]: event.currentTarget.value }))
+                            }
+                            placeholder="Tulis komen anda..."
+                          />
+
+                          <Group justify="flex-end">
+                            <Button size="xs" onClick={() => void handleCreateComment(post.id)}>
+                              Hantar komen
+                            </Button>
+                          </Group>
+                        </Stack>
+                      )}
+                    </Stack>
+                    </Group>
+                  </Box>
+                  <Divider />
+                </Box>
               );
             })}
 
@@ -623,60 +645,14 @@ export default function HomePage() {
         )}
       </Stack>
 
-      <FAB
-        label="Buat post baharu"
-        icon={<IconMessagePlus size={24} />}
-        onClick={() => setIsPostModalOpen(true)}
-      />
+      {showFAB && (
+        <FAB
+          label="Buat post baharu"
+          icon={<IconMessagePlus size={24} />}
+          onClick={() => router.push('/buat-post')}
+        />
+      )}
 
-      <Modal
-        opened={isPostModalOpen}
-        onClose={() => setIsPostModalOpen(false)}
-        title="Cipta Post"
-        centered
-      >
-        <Stack>
-          <Textarea
-            minRows={4}
-            autosize
-            value={newPostContent}
-            onChange={(event) => setNewPostContent(event.currentTarget.value)}
-            placeholder="Kongsi soalan, pengalaman, atau tip temuduga anda..."
-          />
-
-          <Group justify="space-between">
-            <Text size="xs" c="dimmed">
-              {isGuestReady ? `Dipost sebagai: ${guestName || 'Tetamu'}` : 'Menyediakan profil tetamu...'}
-            </Text>
-            <Button onClick={() => void handleCreatePost()} loading={isSubmittingPost}>
-              Hantar
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
-
-      <Modal
-        opened={isAnnouncementModalOpen}
-        onClose={() => setIsAnnouncementModalOpen(false)}
-        title="Kemaskini Pengumuman"
-        centered
-      >
-        <Stack>
-          <Textarea
-            minRows={4}
-            autosize
-            value={announcementDraft}
-            onChange={(event) => setAnnouncementDraft(event.currentTarget.value)}
-            placeholder="Tulis pengumuman penting untuk semua calon..."
-          />
-
-          <Group justify="flex-end">
-            <Button onClick={() => void handleSaveAnnouncement()} loading={isSubmittingAnnouncement}>
-              Simpan
-            </Button>
-          </Group>
-        </Stack>
-      </Modal>
     </Container>
   );
 }

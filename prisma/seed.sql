@@ -3,13 +3,9 @@
 -- Admin password: LulusSPP2026!
 
 -- ─── Admin ────────────────────────────────────────────────────────────────────
-INSERT INTO "Admin" ("id", "username", "passwordHash", "createdAt")
-VALUES (
-  'admin_seed_001',
-  'admin',
-  '$2a$10$sJ2giydQ3nqkqVk8/N5AyO/Zh59jC8eZubZT7tiaiSloh17NpQaLq',
-  CURRENT_TIMESTAMP
-);
+UPDATE "Admin" 
+SET "passwordHash" = '$2a$10$epD6U/8K.a12oltTOFwWQalqzcX.9e4yoCB4d5X9TF'
+WHERE "username" = 'admin';
 
 -- ─── Default TipLabels ────────────────────────────────────────────────────────
 INSERT INTO "TipLabel" ("id", "name") VALUES ('label_01', 'Pemakaian');

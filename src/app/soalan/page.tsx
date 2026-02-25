@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ActionIcon,
+  Avatar,
   Badge,
   Button,
   Container,
@@ -20,7 +21,7 @@ import {
 import { IconEdit, IconPlus, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatDateTime } from '@/lib/date';
+import { formatDateTime, formatRelativeTime } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestName } from '@/hooks/useGuestName';
 import type { BidangItem, SoalanItem } from '@/types/entities';
@@ -261,7 +262,7 @@ export default function SoalanPage() {
         />
 
         {isAdmin && (
-          <Paper withBorder p="sm" radius="md">
+          <Paper withBorder p="sm" radius="md" bg="#181818">
             <Stack gap="xs">
               <Text fw={600} size="sm">
                 Tambah Bidang (Admin)
@@ -296,46 +297,56 @@ export default function SoalanPage() {
               const canManage = isAdmin || (authorToken ? item.authorToken === authorToken : false);
 
               return (
-                <Paper key={item.id} withBorder p="md" radius="md">
-                  <Stack gap={6}>
-                    <Group justify="space-between" align="flex-start" wrap="nowrap">
-                      <div>
-                        <Group gap={6}>
-                          <Badge color="brand" variant="light">
-                            {item.bidangName}
-                          </Badge>
-                        </Group>
-                        <Text size="xs" c="dimmed" mt={4}>
-                          Oleh {item.authorName} • {formatDateTime(item.createdAt)}
-                        </Text>
-                      </div>
+                <Paper key={item.id} withBorder p="md" radius="md" bg="#181818">
+                  <Group wrap="nowrap" align="flex-start" gap="sm">
+                    <Avatar color="teal" radius="xl" size="md">
+                      {item.authorName.charAt(0).toUpperCase() || 'T'}
+                    </Avatar>
+                    <Stack gap={6} style={{ flex: 1 }}>
+                      <Group justify="space-between" align="flex-start" wrap="nowrap">
+                        <div>
+                          <Group gap={6} align="center">
+                            <Text fw={600} size="sm">
+                              {item.authorName}
+                            </Text>
+                            <Text size="xs" c="dimmed">
+                              {formatRelativeTime(item.createdAt)}
+                            </Text>
+                          </Group>
+                          <Group gap={6} mt={4}>
+                            <Badge color="brand" variant="light" size="sm">
+                              {item.bidangName}
+                            </Badge>
+                          </Group>
+                        </div>
 
-                      {canManage && (
-                        <Group gap={4}>
-                          <ActionIcon
-                            variant="light"
-                            color="blue"
-                            onClick={() => openEditModal(item)}
-                            aria-label="Edit soalan"
-                          >
-                            <IconEdit size={16} />
-                          </ActionIcon>
-                          <ActionIcon
-                            variant="light"
-                            color="red"
-                            onClick={() => void handleDeleteSoalan(item.id)}
-                            aria-label="Delete soalan"
-                          >
-                            <IconTrash size={16} />
-                          </ActionIcon>
-                        </Group>
-                      )}
-                    </Group>
+                        {canManage && (
+                          <Group gap={4}>
+                            <ActionIcon
+                              variant="light"
+                              color="blue"
+                              onClick={() => openEditModal(item)}
+                              aria-label="Edit soalan"
+                            >
+                              <IconEdit size={16} />
+                            </ActionIcon>
+                            <ActionIcon
+                              variant="light"
+                              color="red"
+                              onClick={() => void handleDeleteSoalan(item.id)}
+                              aria-label="Delete soalan"
+                            >
+                              <IconTrash size={16} />
+                            </ActionIcon>
+                          </Group>
+                        )}
+                      </Group>
 
-                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                      {item.content}
-                    </Text>
-                  </Stack>
+                      <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                        {item.content}
+                      </Text>
+                    </Stack>
+                  </Group>
                 </Paper>
               );
             })}

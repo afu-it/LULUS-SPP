@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import {
   ActionIcon,
   Anchor,
+  Avatar,
   Button,
   Container,
   Group,
@@ -19,7 +20,7 @@ import {
 import { IconEdit, IconPlus, IconSearch, IconTrash } from '@tabler/icons-react';
 import { notifications } from '@mantine/notifications';
 import { EmptyState } from '@/components/common/EmptyState';
-import { formatDateTime } from '@/lib/date';
+import { formatDateTime, formatRelativeTime } from '@/lib/date';
 import { useAuth } from '@/hooks/useAuth';
 import { useGuestName } from '@/hooks/useGuestName';
 import type { NoteItem } from '@/types/entities';
@@ -205,48 +206,58 @@ export default function NotaPage() {
         ) : (
           <Stack gap="sm">
             {notes.map((note) => (
-              <Paper key={note.id} withBorder p="md" radius="md">
-                <Stack gap={6}>
-                  <Group justify="space-between" align="flex-start" wrap="nowrap">
-                    <div>
-                      <Title order={4}>{note.title}</Title>
-                      <Text size="xs" c="dimmed">
-                        Oleh {note.authorName} • {formatDateTime(note.createdAt)}
-                      </Text>
-                    </div>
+              <Paper key={note.id} withBorder p="md" radius="md" bg="#181818">
+                <Group wrap="nowrap" align="flex-start" gap="sm">
+                  <Avatar color="grape" radius="xl" size="md">
+                    {note.authorName.charAt(0).toUpperCase() || 'T'}
+                  </Avatar>
+                  <Stack gap={6} style={{ flex: 1 }}>
+                    <Group justify="space-between" align="flex-start" wrap="nowrap">
+                      <div>
+                        <Group gap={6} align="center">
+                          <Text fw={600} size="sm">
+                            {note.authorName}
+                          </Text>
+                          <Text size="xs" c="dimmed">
+                            {formatRelativeTime(note.createdAt)}
+                          </Text>
+                        </Group>
+                        <Title order={4} size="sm" mt={2} fw={700}>{note.title}</Title>
+                      </div>
 
-                    {canManage(note) && (
-                      <Group gap={4}>
-                        <ActionIcon
-                          variant="light"
-                          color="blue"
-                          onClick={() => openEditModal(note)}
-                          aria-label="Edit note"
-                        >
-                          <IconEdit size={16} />
-                        </ActionIcon>
-                        <ActionIcon
-                          variant="light"
-                          color="red"
-                          onClick={() => void handleDeleteNote(note.id)}
-                          aria-label="Delete note"
-                        >
-                          <IconTrash size={16} />
-                        </ActionIcon>
-                      </Group>
+                      {canManage(note) && (
+                        <Group gap={4}>
+                          <ActionIcon
+                            variant="light"
+                            color="blue"
+                            onClick={() => openEditModal(note)}
+                            aria-label="Edit note"
+                          >
+                            <IconEdit size={16} />
+                          </ActionIcon>
+                          <ActionIcon
+                            variant="light"
+                            color="red"
+                            onClick={() => void handleDeleteNote(note.id)}
+                            aria-label="Delete note"
+                          >
+                            <IconTrash size={16} />
+                          </ActionIcon>
+                        </Group>
+                      )}
+                    </Group>
+
+                    <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
+                      {note.content}
+                    </Text>
+
+                    {note.link && (
+                      <Anchor href={note.link} target="_blank" rel="noreferrer" size="sm">
+                        {note.link}
+                      </Anchor>
                     )}
-                  </Group>
-
-                  <Text size="sm" style={{ whiteSpace: 'pre-wrap' }}>
-                    {note.content}
-                  </Text>
-
-                  {note.link && (
-                    <Anchor href={note.link} target="_blank" rel="noreferrer" size="sm">
-                      {note.link}
-                    </Anchor>
-                  )}
-                </Stack>
+                  </Stack>
+                </Group>
               </Paper>
             ))}
           </Stack>

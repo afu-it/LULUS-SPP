@@ -22,6 +22,7 @@ model Post {
   authorToken String
   isPinned    Boolean   @default(false)
   likes       Int       @default(0)
+  reposts     Int       @default(0)
   comments    Comment[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt

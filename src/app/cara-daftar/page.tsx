@@ -180,7 +180,7 @@ export default function CaraDaftarPage() {
         ) : (
           <Stack gap="sm">
             {steps.map((step) => (
-              <Paper key={step.id} withBorder p="md" radius="md">
+              <Paper key={step.id} withBorder p="md" radius="md" bg="#181818">
                 <Stack gap={8}>
                   <Group justify="space-between" align="flex-start" wrap="nowrap">
                     <div>

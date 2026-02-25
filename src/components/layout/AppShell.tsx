@@ -2,6 +2,7 @@
 
 import { Box } from '@mantine/core';
 import { BottomNavbar } from './BottomNavbar';
+import { GuestPrompt } from './GuestPrompt';
 import classes from './AppShell.module.css';
 
 interface AppShellLayoutProps {
@@ -15,6 +16,7 @@ export function AppShellLayout({ children }: AppShellLayoutProps) {
         {children}
       </Box>
       <BottomNavbar />
+      <GuestPrompt />
     </Box>
   );
 }

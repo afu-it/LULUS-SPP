@@ -30,7 +30,7 @@ export default function RootLayout({
       </head>
       <body>
         <MantineProviderClient>
-          <Notifications position="top-center" />
+          <Notifications position="top-center" limit={2} containerWidth={280} />
           <ModalsProvider>
             <I18nProvider>
               <AuthProvider>

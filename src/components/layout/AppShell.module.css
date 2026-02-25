@@ -8,10 +8,7 @@
     linear-gradient(180deg, #f8f9fc 0%, #f4f5fb 48%, #eff1f8 100%);
 
   @mixin dark {
-    background:
-      radial-gradient(circle at 20% -10%, rgba(92, 107, 192, 0.2), transparent 45%),
-      radial-gradient(circle at 90% 0%, rgba(26, 35, 126, 0.25), transparent 38%),
-      linear-gradient(180deg, #1a1b1e 0%, #17181c 55%, #14151a 100%);
+    background: #0a0a0a;
   }
 }
 
@@ -19,7 +16,6 @@
   flex: 1;
   width: min(760px, 100%);
   margin-inline: auto;
-  padding-inline: clamp(12px, 2.4vw, 20px);
   padding-top: clamp(10px, 1.8vw, 18px);
   /* bottom padding accounts for fixed BottomNavbar + safe area */
   padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px));
