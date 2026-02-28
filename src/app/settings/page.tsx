@@ -16,6 +16,7 @@ import {
   Title,
   UnstyledButton,
 } from '@mantine/core';
+import { notifications } from '@mantine/notifications';
 import {
   IconSun,
   IconMoon,
@@ -24,6 +25,7 @@ import {
 } from '@tabler/icons-react';
 import { useRouter } from 'next/navigation';
 import { useGuestName } from '@/hooks/useGuestName';
+import { useAuth } from '@/hooks/useAuth';
 import { useDarkMode } from '@/hooks/useDarkMode';
 import { useI18n } from '@/hooks/useI18n';
 import type { Locale } from '@/providers/I18nProvider';
@@ -35,14 +37,27 @@ const THEME_OPTIONS: { value: ThemeScheme; labelKey: string; icon: React.ReactNo
   { value: 'auto', labelKey: 'settings.darkMode.auto', icon: <IconDeviceDesktop size={15} /> },
 ];
 
+function formatRemainingTime(remainingMs: number, locale: Locale) {
+  const hours = Math.max(1, Math.ceil(remainingMs / (60 * 60 * 1000)));
+
+  if (hours >= 24) {
+    const days = Math.ceil(hours / 24);
+    return locale === 'ms' ? `${days} hari` : `${days} day${days === 1 ? '' : 's'}`;
+  }
+
+  return locale === 'ms' ? `${hours} jam` : `${hours} hour${hours === 1 ? '' : 's'}`;
+}
+
 export default function SettingsPage() {
   const { locale, setLocale, t } = useI18n();
-  const { guestName, setGuestName, isReady } = useGuestName();
+  const { guestName, setGuestName, isReady, displayNameChangeRemainingMs } = useGuestName();
+  const { isAdmin } = useAuth();
   const { colorScheme, setTheme } = useDarkMode();
   const router = useRouter();
 
   const [guestNameDraft, setGuestNameDraft] = useState('');
   const [saved, setSaved] = useState(false);
+  const [saveWarning, setSaveWarning] = useState<string | null>(null);
 
   // 5-tap Easter egg on About section
   const tapCountRef = useRef(0);
@@ -50,14 +65,58 @@ export default function SettingsPage() {
   const [tapsLeft, setTapsLeft] = useState<number | null>(null);
 
   useEffect(() => {
-    if (isReady) setGuestNameDraft(guestName);
+    if (isReady) {
+      setGuestNameDraft(guestName);
+      setSaveWarning(null);
+    }
   }, [guestName, isReady]);
 
   function handleSaveGuestName() {
-    setGuestName(guestNameDraft);
+    const result = setGuestName(guestNameDraft, { isAdmin });
+
+    if (!result.ok) {
+      let message = t('settings.error.title');
+
+      if (result.code === 'reserved') {
+        message = t('settings.guest.error.reservedAdmin');
+      } else if (result.code === 'same') {
+        message = t('settings.guest.error.sameName');
+      } else if (result.code === 'required') {
+        message = t('settings.guest.error.required');
+      } else if (result.code === 'locked') {
+        const timeLabel = formatRemainingTime(
+          result.remainingMs ?? displayNameChangeRemainingMs,
+          locale,
+        );
+        message = t('settings.guest.error.locked').replace('{time}', timeLabel);
+      }
+
+      setSaveWarning(message);
+      notifications.show({
+        color: 'yellow',
+        title: t('settings.error.title'),
+        message,
+      });
+      return;
+    }
+
+    setSaveWarning(null);
     setSaved(true);
+    notifications.show({
+      color: 'green',
+      title: t('settings.success.title'),
+      message: t('settings.guest.saved'),
+    });
     setTimeout(() => setSaved(false), 2000);
   }
+
+  const changeLockHint =
+    displayNameChangeRemainingMs > 0
+      ? t('settings.guest.warning.locked').replace(
+          '{time}',
+          formatRemainingTime(displayNameChangeRemainingMs, locale),
+        )
+      : null;
 
   function handleAboutTap() {
     tapCountRef.current += 1;
@@ -150,9 +209,25 @@ export default function SettingsPage() {
               onChange={(e) => setGuestNameDraft(e.currentTarget.value)}
             />
 
-            <Button onClick={handleSaveGuestName} color={saved ? 'green' : undefined}>
+            <Button
+              onClick={handleSaveGuestName}
+              color={saved ? 'green' : undefined}
+              disabled={!guestNameDraft.trim()}
+            >
               {saved ? t('settings.success.title') + '!' : t('settings.guest.save')}
             </Button>
+
+            {saveWarning && (
+              <Text size="xs" c="yellow.7">
+                {saveWarning}
+              </Text>
+            )}
+
+            {changeLockHint && (
+              <Text size="xs" c="dimmed">
+                {changeLockHint}
+              </Text>
+            )}
 
             {!isReady && <Text size="xs" c="dimmed">{t('settings.status.checking')}</Text>}
           </Stack>

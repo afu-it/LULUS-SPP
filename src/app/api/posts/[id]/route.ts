@@ -13,6 +13,9 @@ interface PostRow {
   authorToken: string;
   isPinned: number | boolean;
   likes: number;
+  reposts: number;
+  sourceLink: string | null;
+  commentsCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -42,6 +45,9 @@ function mapPost(row: PostRow) {
     authorToken: row.authorToken,
     isPinned: asBoolean(row.isPinned),
     likes: Number(row.likes ?? 0),
+    reposts: Number(row.reposts ?? 0),
+    commentsCount: Number(row.commentsCount ?? 0),
+    sourceLink: row.sourceLink ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -58,16 +64,37 @@ function mapComment(row: CommentRow) {
   };
 }
 
-export async function GET(_request: Request, context: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
   try {
+    const { searchParams } = new URL(request.url);
+    const rawCommentsLimit = Number(searchParams.get('commentsLimit') ?? 50);
+    const rawCommentsOffset = Number(searchParams.get('commentsOffset') ?? 0);
+    const commentsLimit = Number.isFinite(rawCommentsLimit)
+      ? Math.min(Math.max(rawCommentsLimit, 1), 100)
+      : 50;
+    const commentsOffset = Number.isFinite(rawCommentsOffset) ? Math.max(rawCommentsOffset, 0) : 0;
+
     const { id } = await context.params;
     const db = getDb();
 
     const postRow = await db
       .prepare(
-        `SELECT id, content, authorName, authorToken, isPinned, likes, createdAt, updatedAt
-         FROM "Post"
-         WHERE id = ?
+        `SELECT
+          p.id,
+          p.content,
+          p.authorName,
+          p.authorToken,
+          p.isPinned,
+          p.likes,
+          p.reposts,
+          p.sourceLink,
+          p.createdAt,
+          p.updatedAt,
+          COUNT(c.id) AS commentsCount
+         FROM "Post" p
+         LEFT JOIN "Comment" c ON c.postId = p.id
+         WHERE p.id = ?
+         GROUP BY p.id
          LIMIT 1`
       )
       .bind(id)
@@ -82,14 +109,32 @@ export async function GET(_request: Request, context: RouteParams) {
         `SELECT id, content, authorName, authorToken, postId, createdAt
          FROM "Comment"
          WHERE postId = ?
-         ORDER BY createdAt ASC`
+         ORDER BY createdAt ASC
+         LIMIT ? OFFSET ?`
       )
-      .bind(id)
+      .bind(id, commentsLimit + 1, commentsOffset)
       .all<CommentRow>();
+
+    const commentCountResult = await db
+      .prepare(`SELECT COUNT(1) AS total FROM "Comment" WHERE postId = ?`)
+      .bind(id)
+      .first<{ total: number }>();
+
+    const commentCount = Number(commentCountResult?.total ?? 0);
+    const rawComments = (commentsResult.results ?? []).map(mapComment);
+    const hasMore = rawComments.length > commentsLimit;
+    const comments = hasMore ? rawComments.slice(0, commentsLimit) : rawComments;
 
     return NextResponse.json({
       item: mapPost(postRow),
-      comments: (commentsResult.results ?? []).map(mapComment),
+      comments,
+      commentsMeta: {
+        total: commentCount,
+        offset: commentsOffset,
+        limit: commentsLimit,
+        hasMore,
+        nextOffset: hasMore ? commentsOffset + commentsLimit : null,
+      },
     });
   } catch {
     return NextResponse.json({ error: 'Unable to fetch post.' }, { status: 500 });

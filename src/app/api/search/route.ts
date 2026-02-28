@@ -16,43 +16,59 @@ export async function GET(request: NextRequest) {
   }
 
   const query = q.trim();
-  const searchCondition = { contains: query };
+  const normalizedQuery = query.slice(0, 120);
+
+  if (normalizedQuery.length < 2) {
+    return NextResponse.json({
+      posts: [],
+      notes: [],
+      tips: [],
+      soalan: [],
+      caraDaftar: [],
+    });
+  }
+
+  const searchCondition = { contains: normalizedQuery };
 
   try {
     const prisma = getPrisma();
-    const [posts, notes, tips, soalan, caraDaftar] = await Promise.all([
-      prisma.post.findMany({
-        where: { content: searchCondition },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-      prisma.note.findMany({
-        where: {
-          OR: [{ title: searchCondition }, { content: searchCondition }],
-        },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-      }),
-      prisma.tip.findMany({
-        where: { content: searchCondition },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        include: { labels: { include: { label: true } } },
-      }),
-      prisma.soalan.findMany({
-        where: { content: searchCondition },
-        orderBy: { createdAt: 'desc' },
-        take: 10,
-        include: { bidang: true },
-      }),
-      prisma.caraDaftarStep.findMany({
-        where: {
-          OR: [{ title: searchCondition }, { content: searchCondition }],
-        },
-        orderBy: { stepNo: 'asc' },
-        take: 10,
-      }),
-    ]);
+    const take = 6;
+
+    const posts = await prisma.post.findMany({
+      where: { content: searchCondition },
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+
+    const notes = await prisma.note.findMany({
+      where: {
+        OR: [{ title: searchCondition }, { content: searchCondition }],
+      },
+      orderBy: { createdAt: 'desc' },
+      take,
+    });
+
+    const tips = await prisma.tip.findMany({
+      where: { content: searchCondition },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: { labels: { include: { label: true } } },
+    });
+
+    const soalan = await prisma.soalan.findMany({
+      where: { content: searchCondition },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: { bidang: true },
+    });
+
+    const caraDaftar = await prisma.caraDaftarStep.findMany({
+      where: {
+        OR: [{ title: searchCondition }, { content: searchCondition }],
+      },
+      orderBy: { stepNo: 'asc' },
+      take,
+    });
 
     return NextResponse.json({
       posts,

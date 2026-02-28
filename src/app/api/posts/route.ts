@@ -23,9 +23,25 @@ interface PostRow {
   createdAt: string;
   updatedAt: string;
   commentsCount: number;
+  topCommentId: string | null;
+  topCommentContent: string | null;
+  topCommentAuthorName: string | null;
+  topCommentAuthorToken: string | null;
+  topCommentCreatedAt: string | null;
 }
 
 function mapPostRow(row: PostRow) {
+  const topComment = row.topCommentId
+    ? {
+        id: row.topCommentId,
+        content: row.topCommentContent ?? '',
+        authorName: row.topCommentAuthorName ?? 'Tetamu',
+        authorToken: row.topCommentAuthorToken ?? '',
+        postId: row.id,
+        createdAt: row.topCommentCreatedAt ?? row.createdAt,
+      }
+    : null;
+
   return {
     id: row.id,
     content: row.content,
@@ -35,6 +51,7 @@ function mapPostRow(row: PostRow) {
     likes: Number(row.likes ?? 0),
     reposts: Number(row.reposts ?? 0),
     commentsCount: Number(row.commentsCount ?? 0),
+    topComment,
     sourceLink: row.sourceLink ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -64,10 +81,24 @@ export async function GET(request: Request) {
           p.sourceLink,
           p.createdAt,
           p.updatedAt,
-          COUNT(c.id) AS commentsCount
+          c_first.id AS topCommentId,
+          c_first.content AS topCommentContent,
+          c_first.authorName AS topCommentAuthorName,
+          c_first.authorToken AS topCommentAuthorToken,
+          c_first.createdAt AS topCommentCreatedAt,
+          (
+            SELECT COUNT(1)
+            FROM "Comment" c_count
+            WHERE c_count.postId = p.id
+          ) AS topCommentCreatedAt
          FROM "Post" p
-         LEFT JOIN "Comment" c ON c.postId = p.id
-         GROUP BY p.id
+         LEFT JOIN "Comment" c_first ON c_first.id = (
+           SELECT c_top.id
+           FROM "Comment" c_top
+           WHERE c_top.postId = p.id
+           ORDER BY c_top.createdAt ASC
+           LIMIT 1
+         )
          ORDER BY p.isPinned DESC, p.createdAt DESC
          LIMIT ? OFFSET ?`
       )

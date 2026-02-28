@@ -15,6 +15,7 @@ export interface PostItem {
   likes: number;
   reposts: number;
   commentsCount: number;
+  topComment?: CommentItem | null;
   sourceLink: string | null;
   createdAt: string;
   updatedAt: string;

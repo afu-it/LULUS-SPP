@@ -31,8 +31,14 @@ function mapComment(row: CommentRow) {
   };
 }
 
-export async function GET(_request: Request, context: RouteParams) {
+export async function GET(request: Request, context: RouteParams) {
   try {
+    const { searchParams } = new URL(request.url);
+    const rawLimit = Number(searchParams.get('limit') ?? 50);
+    const rawOffset = Number(searchParams.get('offset') ?? 0);
+    const limit = Number.isFinite(rawLimit) ? Math.min(Math.max(rawLimit, 1), 100) : 50;
+    const offset = Number.isFinite(rawOffset) ? Math.max(rawOffset, 0) : 0;
+
     const { id: postId } = await context.params;
     const db = getDb();
 
@@ -41,12 +47,25 @@ export async function GET(_request: Request, context: RouteParams) {
         `SELECT id, content, authorName, authorToken, postId, createdAt
          FROM "Comment"
          WHERE postId = ?
-         ORDER BY createdAt ASC`
+         ORDER BY createdAt ASC
+         LIMIT ? OFFSET ?`
       )
-      .bind(postId)
+      .bind(postId, limit + 1, offset)
       .all<CommentRow>();
 
-    return NextResponse.json({ items: (rows.results ?? []).map(mapComment) });
+    const allItems = (rows.results ?? []).map(mapComment);
+    const hasMore = allItems.length > limit;
+    const items = hasMore ? allItems.slice(0, limit) : allItems;
+
+    return NextResponse.json({
+      items,
+      pagination: {
+        offset,
+        limit,
+        hasMore,
+        nextOffset: hasMore ? offset + limit : null,
+      },
+    });
   } catch {
     return NextResponse.json({ error: 'Unable to fetch comments.' }, { status: 500 });
   }
